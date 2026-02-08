@@ -1,17 +1,43 @@
 ---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { getCollection } from "astro:content";
+import Calendar from "../components/Calendar.astro";
+import ArticleList from "../components/ArticleList.astro";
+import plans from "../data/plans.json";
+import PlanList from "../components/PlanList.astro";
 
+const postsAll = await getCollection("posts", ({ data }) => !data.draft);
+const posts = postsAll.sort((a, b) => (a.data.date < b.data.date ? 1 : -1));
 ---
+<BaseLayout title="かもねぎ通信">
+  <div class="grid">
+    <div class="list" style="gap:18px;">
+      <Calendar posts={posts} plans={plans} />
+      <ArticleList posts={posts} limit={10} title="最新の記事" />
+    </div>
 
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
-	</head>
-	<body>
-		<h1>Astro</h1>
-	</body>
-</html>
+    <div class="list" style="gap:18px;">
+      <!-- ここを追加 -->
+      <PlanList plans={plans} />
+      <!-- ここまで -->
+
+      <section class="card">
+        <h2 class="h2">今週の言葉</h2>
+        <div class="hr"></div>
+        <p style="margin:0;">
+          見えずとも、誰恋ひざらめ。山の端にいさよふ月を、よそに見てしが
+        </p>
+        <div class="small" style="margin-top:8px;">— 『万葉集』第三巻、392番。</div>
+      </section>
+
+      <section class="card">
+        <h2 class="h2">SNS</h2>
+        <div class="list">
+          <a class="item" href="https://x.com/neo_neco_" style="text-decoration:none;">X</a>
+          <a class="item" href="https://note.com/neoneco" style="text-decoration:none;">Note</a>
+          <a class="item" href="https://bookmeter.com/users/1179346" style="text-decoration:none;">読書メーター</a>
+        </div>
+      </section>
+    </div>
+  </div>
+</BaseLayout>

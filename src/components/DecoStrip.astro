@@ -1,0 +1,41 @@
+---
+const B = import.meta.env.BASE_URL;
+
+const imgs = [
+  "sun1.jpg",
+  "star.jpg",
+  "moon.jpg",
+  "negi1.jpg",
+  "neco1.jpg",
+  "kamonegi.jpg",
+];
+---
+<div class="decoStrip" aria-hidden="true">
+  {imgs.map((f) => (
+    <img src={`${B}images/deco/${f}`} class="decoStamp" alt="" loading="lazy" />
+  ))}
+</div>
+
+<style>
+  .decoStrip {
+    display: flex;
+    flex-wrap: nowrap;           /* 折り返さない */
+    overflow: hidden;
+    gap: 12px;
+    margin-top: 10px;
+    padding: 10px 0 2px;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .decoStamp {
+    width: 26px;
+    height: 26px;
+    object-fit: cover;
+    opacity: 1;              /* 薄すぎをやめる */
+    border-radius: 8px;         /* 角だけ少し丸める */
+    box-shadow: none;           /* 浮かせない */
+    filter: none;
+    mix-blend-mode: normal;     /* 変な薄さの原因になりがちなので切る */
+  }
+</style>

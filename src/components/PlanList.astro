@@ -1,0 +1,78 @@
+---
+type Plan = {
+  date: string;
+  title: string;
+  category: "しんぶん" | "自然と科学" | "文化と芸術" | "せいかつ" | "研究室" | "雑記";
+};
+
+const categoryIcon: Record<Plan["category"], string> = {
+  しんぶん: "📰",
+  自然と科学: "🪴",
+  文化と芸術: "🎨",
+  せいかつ: "🍲",
+  研究室: "📎",
+  雑記: "✍️",
+};
+
+const { plans, title = "執筆予定", limit = 6 } = Astro.props as {
+  plans: Plan[];
+  title?: string;
+  limit?: number;
+};
+
+const upcoming = [...plans]
+  .sort((a, b) => (a.date > b.date ? 1 : -1))
+  .slice(0, limit);
+---
+<section>
+  <h2 class="h2">{title}</h2>
+
+  <ul class="planLines">
+    {upcoming.map((p) => (
+      <li>
+        <a href={`/date/${p.date}`}>
+          {categoryIcon[p.category]}
+          <span class="sep">／</span>
+          <span class="label">（予定）</span>
+          {p.title}
+        </a>
+      </li>
+    ))}
+  </ul>
+</section>
+
+<style>
+  .planLines {
+    list-style: none;
+    padding: 0;
+    margin: 8px 0 0;
+  }
+
+  .planLines li {
+    padding: 6px 0;
+    border-bottom: 1px dotted var(--line);
+  }
+
+  .planLines li:last-child {
+    border-bottom: none;
+  }
+
+  .planLines a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+
+  .planLines a:hover {
+    text-decoration: underline;
+  }
+
+  .sep {
+    margin: 0 4px;
+    color: var(--muted);
+  }
+
+  .label {
+    color: var(--muted);
+    margin-right: 2px;
+  }
+</style>

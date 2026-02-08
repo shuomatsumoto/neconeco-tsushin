@@ -1,0 +1,49 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { getCollection } from "astro:content";
+import { categoryMeta } from "../../components/category";
+
+export async function getStaticPaths() {
+  const posts = await getCollection("posts", ({ data }) => !data.draft);
+  return posts.map((p) => ({ params: { slug: p.slug }, props: { post: p } }));
+}
+
+const { post } = Astro.props;
+const meta = categoryMeta[post.data.category];
+const { Content } = await post.render();
+---
+<BaseLayout title={`${post.data.title} | かもねぎ通信`}>
+  <article class="card">
+    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+      <span class="badge">
+        <span aria-hidden="true">{meta.icon}</span>
+        <a href={`/${meta.slug}`} style="text-decoration:none;">{post.data.category}</a>
+      </span>
+      <span class="small mono">{post.data.date}</span>
+      {post.data.tags?.length ? <span class="small">#{post.data.tags.join(" #")}</span> : null}
+    </div>
+
+    <div class="hr"></div>
+
+    <h1 class="h1">{post.data.title}</h1>
+    <div class="hr"></div>
+
+    <div class="prose">
+      <Content />
+    </div>
+  </article>
+</BaseLayout>
+
+<style>
+  .prose :global(p) { margin: 0 0 1em; }
+  .prose :global(h2) { margin: 1.4em 0 0.6em; font-size: 1.2rem; }
+  .prose :global(h3) { margin: 1.2em 0 0.5em; font-size: 1.05rem; }
+  .prose :global(a) { text-decoration: underline; }
+  .prose :global(blockquote) {
+    margin: 1em 0;
+    padding: 10px 14px;
+    border-left: 3px solid var(--line);
+    background: rgba(255,255,255,0.4);
+    border-radius: 12px;
+  }
+</style>

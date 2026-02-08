@@ -1,0 +1,53 @@
+---
+const items = [
+  { href: "/", label: "ホーム", icon: "☀️" },
+  { href: "/shimbun", label: "しんぶん", icon: "📰" },
+  { href: "/science", label: "自然と科学", icon: "🪴" },
+  { href: "/culture", label: "文化と芸術", icon: "🎨" },
+  { href: "/life", label: "せいかつ", icon: "🍲" },
+  { href: "/lab", label: "研究室", icon: "📎" },
+  { href: "/zatsuki", label: "雑記", icon: "✍️" },
+];
+---
+<button id="sunFab" class="sunFab" type="button" aria-label="menu" aria-expanded="false">
+  ☀️
+</button>
+
+<nav id="sunMenu" class="sunMenu" data-open="false" aria-label="site navigation">
+  <div class="sunInner">
+    {items.map((it) => (
+      <a href={it.href} class="sunItem">
+        <span aria-hidden="true">{it.icon}</span>
+        <span>{it.label}</span>
+      </a>
+    ))}
+  </div>
+</nav>
+
+<script is:inline>
+  document.addEventListener("DOMContentLoaded", () => {
+    const btn = document.getElementById("sunFab");
+    const menu = document.getElementById("sunMenu");
+    const page = document.getElementById("pageWrap");
+
+    const setOpen = (next) => {
+      menu.dataset.open = next ? "true" : "false";
+      page.dataset.shift = next ? "true" : "false";
+      btn.setAttribute("aria-expanded", next ? "true" : "false");
+    };
+
+    btn?.addEventListener("click", () => {
+      const open = menu.dataset.open === "true";
+      setOpen(!open);
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") setOpen(false);
+    });
+
+    menu?.addEventListener("click", (e) => {
+      const a = e.target?.closest?.("a");
+      if (a) setOpen(false);
+    });
+  });
+</script>

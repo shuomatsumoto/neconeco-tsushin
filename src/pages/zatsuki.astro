@@ -1,0 +1,16 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { getCollection } from "astro:content";
+import ArticleList from "../components/ArticleList.astro";
+
+const postsAll = await getCollection("posts", ({ data }) => !data.draft && data.category === "雑記");
+const posts = postsAll.sort((a,b) => (a.data.date < b.data.date ? 1 : -1));
+---
+<BaseLayout title="雑記 ✍️ | かもねぎ通信">
+  <div class="card">
+    <h2 class="h2">雑記 ✍️</h2>
+    <div class="small">日誌やエッセイ。多和田的な自由枠。</div>
+  </div>
+  <div class="hr"></div>
+  <ArticleList posts={posts} title="記事一覧" />
+</BaseLayout>

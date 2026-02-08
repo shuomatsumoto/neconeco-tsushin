@@ -1,0 +1,142 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { getCollection } from "astro:content";
+import plans from "../../data/plans.json";
+import { categoryMeta } from "../../components/category";
+
+type Plan = {
+  date: string; // YYYY-MM-DD
+  title: string;
+  category: "しんぶん" | "自然と科学" | "文化と芸術" | "せいかつ" | "研究室" | "雑記";
+  status?: string;
+};
+
+type CardItem =
+  | {
+      kind: "post";
+      date: string;
+      title: string;
+      category: Plan["category"];
+      href: string;
+      tags: string[];
+      // 「アップロード順」代替として、同日内は slug で安定ソート（後述）
+      sortKey: string;
+    }
+  | {
+      kind: "plan";
+      date: string;
+      title: string;
+      category: Plan["category"];
+      status?: string;
+      href: string;
+      sortKey: string;
+    };
+
+export async function getStaticPaths() {
+  const allPlans = (plans as Plan[]) ?? [];
+  const posts = await getCollection("posts", ({ data }) => !data.draft);
+
+  const postDates = posts.map((p) => p.data.date);
+  const planDates = allPlans.map((p) => p.date);
+
+  const dates = Array.from(new Set([...postDates, ...planDates]));
+  return dates.map((ymd) => ({ params: { ymd } }));
+}
+
+const { ymd } = Astro.params as { ymd: string };
+
+// その日の記事
+const postsAll = await getCollection("posts", ({ data }) => !data.draft && data.date === ymd);
+
+// ここが「並び順」：同日内で安定して並ぶよう slug ベースにしてあります。
+// もし “新しい順” にしたいなら sort を逆にするだけでOKです。
+const postItems: CardItem[] = postsAll
+  .map((p) => ({
+    kind: "post",
+    date: p.data.date,
+    title: p.data.title,
+    category: p.data.category,
+    href: `/posts/${p.slug}`,
+    tags: p.data.tags ?? [],
+    sortKey: `P-${p.slug}`,
+  }))
+  .sort((a, b) => (a.sortKey > b.sortKey ? 1 : -1));
+
+// その日の予定
+const allPlans = (plans as Plan[]) ?? [];
+const planItems: CardItem[] = allPlans
+  .filter((p) => p.date === ymd)
+  .map((p, idx) => ({
+    kind: "plan",
+    date: p.date,
+    title: p.title,
+    category: p.category,
+    status: p.status,
+    href: `/date/${p.date}`,
+    // plans.json 内の並び順を保持したいので idx を入れる
+    sortKey: `Q-${String(idx).padStart(4, "0")}`,
+  }));
+
+// 合体（記事→予定の順。混ぜたいなら sortKey に日付や種別を工夫できます）
+const items: CardItem[] = [...postItems, ...planItems];
+---
+<BaseLayout title={`${ymd} | かもねぎ通信`}>
+  <!-- 日付はカードにしない：自然な見出し -->
+  <div style="display:flex; align-items:baseline; justify-content:space-between; gap:12px;">
+    <h2 class="h2" style="margin:0;">{ymd}</h2>
+    <div class="small">● 記事 / ○ 予定</div>
+  </div>
+
+  <div class="hr"></div>
+
+  {items.length ? (
+    <div class="cardsGrid">
+      {items.map((it) => {
+        const meta = categoryMeta[it.category];
+        return (
+          <a href={it.href} style="text-decoration:none;">
+            <div class="item" style="height:100%;">
+              <div style="display:flex; gap:10px; align-items:baseline; justify-content:space-between;">
+                <span class="badge" title={it.category}>
+                  <span aria-hidden="true">{it.kind === "post" ? "●" : "○"}</span>
+                  <span aria-hidden="true">{meta.icon}</span>
+                  <span>{it.category}</span>
+                </span>
+                <span class="small mono">{it.date}</span>
+              </div>
+
+              <div style="margin-top:6px;">
+                <strong>{it.title}</strong>
+              </div>
+
+              {it.kind === "post" && it.tags.length ? (
+                <div class="small" style="margin-top:6px;">#{it.tags.join(" #")}</div>
+              ) : null}
+
+              {it.kind === "plan" && it.status ? (
+                <div class="small" style="margin-top:6px;">
+                  status: <span class="mono">{it.status}</span>
+                </div>
+              ) : null}
+            </div>
+          </a>
+        );
+      })}
+    </div>
+  ) : (
+    <div class="small">この日には記事も予定もありません。</div>
+  )}
+
+  <style>
+    .cardsGrid {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    @media (max-width: 860px) {
+      .cardsGrid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</BaseLayout>

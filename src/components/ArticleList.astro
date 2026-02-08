@@ -1,0 +1,39 @@
+---
+import type { CollectionEntry } from "astro:content";
+import { categoryMeta, toYMD } from "./category";
+
+const { posts, limit, title = "記事" } = Astro.props as {
+  posts: CollectionEntry<"posts">[];
+  limit?: number;
+  title?: string;
+};
+
+const shown = typeof limit === "number" ? posts.slice(0, limit) : posts;
+---
+<section class="card">
+  <h2 class="h2">{title}</h2>
+  <div class="list">
+    {shown.map((p) => {
+      const meta = categoryMeta[p.data.category];
+      return (
+        <a href={`/posts/${p.slug}`} style="text-decoration:none;">
+          <div class="item">
+            <div class="titleline">
+              <div style="display:flex; gap:10px; align-items:baseline;">
+                <span class="badge" title={p.data.category}>
+                  <span aria-hidden="true">{meta.icon}</span>
+                  <span>{p.data.category}</span>
+                </span>
+                <strong>{p.data.title}</strong>
+              </div>
+              <span class="small mono">{toYMD(p.data.date)}</span>
+            </div>
+            <div class="small">
+              {p.data.tags?.length ? `#${p.data.tags.join(" #")}` : ""}
+            </div>
+          </div>
+        </a>
+      );
+    })}
+  </div>
+</section>
