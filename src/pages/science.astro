@@ -7,10 +7,8 @@ const postsAll = await getCollection("posts", ({ data }) => !data.draft && data.
 const posts = postsAll.sort((a,b) => (a.data.date < b.data.date ? 1 : -1));
 ---
 <BaseLayout title="自然と科学 🪴 | かもねぎ通信">
-  <div class="card">
     <h2 class="h2">自然と科学 🪴</h2>
     <div class="small">いきもの・自然・環境。可能なら最新の科学ニュースも。</div>
-  </div>
   <div class="hr"></div>
   <ArticleList posts={posts} title="記事一覧" />
 </BaseLayout>

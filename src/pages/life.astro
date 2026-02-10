@@ -7,10 +7,8 @@ const postsAll = await getCollection("posts", ({ data }) => !data.draft && data.
 const posts = postsAll.sort((a,b) => (a.data.date < b.data.date ? 1 : -1));
 ---
 <BaseLayout title="せいかつ 🍲 | かもねぎ通信">
-  <div class="card">
     <h2 class="h2">せいかつ 🍲</h2>
     <div class="small">手芸・料理・レシピなど生活の共有。</div>
-  </div>
   <div class="hr"></div>
   <ArticleList posts={posts} title="記事一覧" />
 </BaseLayout>

@@ -1,0 +1,174 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { getCollection } from "astro:content";
+import { categoryMeta, toYMD } from "../components/category";
+
+const BASE = import.meta.env.BASE_URL.endsWith("/")
+  ? import.meta.env.BASE_URL
+  : import.meta.env.BASE_URL + "/";
+
+const postsAll = await getCollection("posts", ({ data }) => !data.draft);
+
+// 最新順：date 降順 → 同日内は slug で安定化
+const posts = [...postsAll].sort((a, b) => {
+  if (a.data.date !== b.data.date) return a.data.date < b.data.date ? 1 : -1;
+  return a.slug < b.slug ? 1 : -1;
+});
+
+const categories = Array.from(new Set(posts.map((p) => p.data.category))).sort(
+  (a, b) => (a > b ? 1 : -1)
+);
+
+function safeTags(tags: unknown): string[] {
+  return Array.isArray(tags) ? tags.filter((t) => typeof t === "string") : [];
+}
+
+const data = posts.map((p) => ({
+  slug: p.slug,
+  title: p.data.title,
+  date: p.data.date,
+  ymd: toYMD(p.data.date),
+  category: p.data.category,
+  tags: safeTags(p.data.tags),
+}));
+---
+<BaseLayout title="記事一覧 | かもねぎ通信">
+  <div class="head">
+    <h1 class="h1" style="margin:0;">記事一覧</h1>
+    <div class="small">最新順 / 検索・絞り込み</div>
+  </div>
+
+  <div class="tools">
+    <input id="q" class="q" type="search" placeholder="タイトル / タグ で検索（例：鳥、分類、#数学）" />
+
+    <select id="cat" class="sel">
+      <option value="">すべてのカテゴリ</option>
+      {categories.map((c) => (
+        <option value={c}>{c}</option>
+      ))}
+    </select>
+
+    <select id="sort" class="sel">
+      <option value="new">新しい順</option>
+      <option value="old">古い順</option>
+    </select>
+
+    <div class="small" style="margin-left:auto;">
+      <span id="count">{data.length} 件</span>
+    </div>
+  </div>
+
+  <div class="hr"></div>
+
+  {/* ✅ まず Astro 側で必ず表示（JSが落ちても見える） */}
+  <ul id="list" class="postList">
+    {data.map((it) => (
+      <li
+        class="li"
+        data-title={it.title}
+        data-category={it.category}
+        data-tags={it.tags.join(" ")}
+        data-date={it.date}
+        data-slug={it.slug}
+      >
+        <a class="postRow" href={`${BASE}posts/${it.slug}`}>
+          <span class="left">
+            <span class="icon" aria-hidden="true">{categoryMeta[it.category].icon}</span>
+            <span class="cat">{it.category}</span>
+            <span class="sep">｜</span>
+            <strong class="title">{it.title}</strong>
+          </span>
+
+          <span class="right">
+            <span class="date">{it.ymd}</span>
+            {it.tags.length ? <span class="tags">#{it.tags.join(" #")}</span> : null}
+          </span>
+        </a>
+      </li>
+    ))}
+  </ul>
+
+  {/* ✅ JS は “絞り込みだけ” 担当 */}
+  <script is:inline>
+    const elQ = document.getElementById("q");
+    const elCat = document.getElementById("cat");
+    const elSort = document.getElementById("sort");
+    const elCount = document.getElementById("count");
+    const list = document.getElementById("list");
+
+    function norm(s){ return (s || "").toString().trim().toLowerCase(); }
+
+    function apply(){
+      const qRaw = norm(elQ.value);
+      const q = qRaw.startsWith("#") ? qRaw.slice(1) : qRaw;
+      const cat = elCat.value;
+      const sort = elSort.value;
+
+      const items = Array.from(list.querySelectorAll("li.li"));
+
+      // 絞り込み
+      let visible = [];
+      for (const li of items) {
+        const title = (li.dataset.title || "").toLowerCase();
+        const category = (li.dataset.category || "");
+        const tags = (li.dataset.tags || "").toLowerCase();
+
+        if (cat && category !== cat) { li.style.display = "none"; continue; }
+        if (q && !(title.includes(q) || tags.includes(q) || category.toLowerCase().includes(q))) {
+          li.style.display = "none"; continue;
+        }
+
+        li.style.display = "";
+        visible.push(li);
+      }
+
+      // 並び替え（date→slug）
+      visible.sort((a,b)=>{
+        const da = a.dataset.date || "";
+        const db = b.dataset.date || "";
+        if (da !== db) return sort === "new" ? (da < db ? 1 : -1) : (da > db ? 1 : -1);
+        const sa = a.dataset.slug || "";
+        const sb = b.dataset.slug || "";
+        return sort === "new" ? (sa < sb ? 1 : -1) : (sa > sb ? 1 : -1);
+      });
+
+      // DOM並べ替え
+      for (const li of visible) list.appendChild(li);
+
+      elCount.textContent = `${visible.length} 件`;
+    }
+
+    elQ.addEventListener("input", apply);
+    elCat.addEventListener("change", apply);
+    elSort.addEventListener("change", apply);
+  </script>
+
+  <style>
+    .head { display:flex; align-items:baseline; justify-content:space-between; gap:12px; }
+    .tools { display:flex; gap:10px; align-items:center; flex-wrap: wrap; margin-top: 10px; }
+    .q {
+      flex: 1 1 280px; min-width: 220px;
+      padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px;
+      background: white; color: var(--ink);
+    }
+    .sel { padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: white; color: var(--ink); }
+
+    .postList { list-style:none; padding:0; margin:0; }
+    .postRow {
+      display:flex; justify-content: space-between; gap: 12px;
+      padding: 8px 0; border-bottom: 1px dotted var(--line);
+      text-decoration:none; color: var(--ink);
+    }
+    .left { display:flex; gap:6px; align-items:baseline; flex-wrap:wrap; }
+    .right { display:flex; gap:10px; align-items:baseline; color: var(--muted); font-size: 0.9em; white-space: nowrap; }
+    .icon { font-size: 1em; }
+    .cat { color: var(--muted); font-size: 0.9em; }
+    .sep { color: var(--muted); }
+    .tags { color: var(--muted); }
+
+    @media (max-width: 640px) {
+      .postRow { flex-direction: column; gap: 4px; }
+      .right { white-space: normal; }
+    }
+  </style>
+</BaseLayout>
