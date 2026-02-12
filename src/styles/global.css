@@ -347,3 +347,11 @@ a:hover { opacity: 0.92; }
 .snsRow .item:hover {
   background: rgba(0,0,0,0.03);
 }
+
+/* Footnotes 見出しだけ非表示 */
+.footnotes > h2,
+.footnotes > h3,
+section.footnotes > h2,
+section.footnotes > h3 {
+  display: none;
+}
