@@ -18,9 +18,16 @@ const { Content } = await post.render();
 
 function thumbSrc(raw?: string) {
   if (!raw) return null;
+
+  // Full URL
   if (raw.startsWith("http://") || raw.startsWith("https://")) return raw;
+
+  // Absolute path like /images/... must be prefixed with BASE on GitHub Pages
   if (raw.startsWith("/")) return `${BASE}${raw.slice(1)}`;
-  return `${BASE}${raw.replace(/^\/+/, "")}`;
+
+  // Relative path -> treat as under BASE
+  const clean = raw.replace(/^\/+/, "");
+  return `${BASE}${clean}`;
 }
 ---
 <BaseLayout title={`${post.data.title} | かもねぎ通信`}>
@@ -28,7 +35,7 @@ function thumbSrc(raw?: string) {
     {post.data.thumbnail ? (
       <div class="heroThumb" aria-hidden="true">
         <img
-          src={thumbSrc(post.data.thumbnail) ?? post.data.thumbnail}
+          src={thumbSrc(post.data.thumbnail)}
           alt=""
           class="heroImg"
           loading="lazy"
