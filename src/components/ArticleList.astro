@@ -19,9 +19,19 @@ const allPostsHref = `${BASE}posts/all`;
 
 function thumbSrc(raw?: string) {
   if (!raw) return null;
-  // absolute (/images/...) or full URL is OK
-  if (raw.startsWith("/") || raw.startsWith("http://") || raw.startsWith("https://")) return raw;
-  // otherwise treat as a path under BASE
+
+  // 外部URLはそのまま
+  if (raw.startsWith("http://") || raw.startsWith("https://")) {
+    return raw;
+  }
+
+  // 先頭が / の場合（例: /images/...）
+  // → GitHub Pages 用に BASE を必ず付ける
+  if (raw.startsWith("/")) {
+    return `${BASE}${raw.slice(1)}`;
+  }
+
+  // それ以外（例: images/...）
   const clean = raw.replace(/^\/+/, "");
   return `${BASE}${clean}`;
 }
