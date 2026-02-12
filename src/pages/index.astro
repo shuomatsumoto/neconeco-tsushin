@@ -21,7 +21,7 @@ const posts = postsAll.sort((a, b) => (a.data.date < b.data.date ? 1 : -1));
       </section>
     </main>
 
-    <aside class="homeCol">
+    <aside class="homeCol homeAside">
       <section class="homeSection">
         <PlanList plans={plans} title="執筆予定" limit={8} />
       </section>
@@ -41,14 +41,20 @@ const posts = postsAll.sort((a, b) => (a.data.date < b.data.date ? 1 : -1));
   <style>
     .homeGrid {
       display: grid;
-      grid-template-columns: 1.25fr 0.9fr;
-      gap: 18px;
+      grid-template-columns: 1.3fr 0.85fr;
+      gap: 16px;
     }
 
     .homeCol {
       display: grid;
-      gap: 18px;
+      gap: 16px;
       align-content: start;
+      min-width: 0;
+    }
+
+    .homeAside {
+      padding-left: 14px;
+      border-left: 1px solid rgba(0,0,0,0.06);
     }
 
     .homeSection {
@@ -67,20 +73,25 @@ const posts = postsAll.sort((a, b) => (a.data.date < b.data.date ? 1 : -1));
     .snsRow .item {
       text-decoration: none;
       color: var(--ink);
-      padding: 6px 10px;
-      border: 1px solid var(--line);
+      padding: 5px 10px;
+      border: 1px solid rgba(0,0,0,0.10);
       border-radius: 999px;
-      font-size: 0.9em;
-      line-height: 1;
+      font-size: 0.88em;
+      line-height: 1.1;
+      background: transparent;
     }
 
     .snsRow .item:hover {
-      text-decoration: underline;
+      opacity: 0.85;
     }
 
     @media (max-width: 900px) {
       .homeGrid {
         grid-template-columns: 1fr;
+      }
+      .homeAside {
+        padding-left: 0;
+        border-left: 0;
       }
     }
   </style>

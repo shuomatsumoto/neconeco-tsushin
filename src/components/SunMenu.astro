@@ -3,9 +3,16 @@ const BASE = import.meta.env.BASE_URL.endsWith("/")
   ? import.meta.env.BASE_URL
   : import.meta.env.BASE_URL + "/";
 
-const items = [
+const topItems = [
   { href: `${BASE}`, label: "ホーム", icon: "☀️" },
   { href: `${BASE}all`, label: "記事一覧", icon: "🗂" },
+];
+
+const catItems = [
+  { href: `${BASE}category/zatsuki`, label: "雑記", icon: "🗒️" },
+  { href: `${BASE}category/analysis`, label: "分析", icon: "🪓" },
+  { href: `${BASE}category/creation`, label: "創作", icon: "🪄" },
+  { href: `${BASE}category/shokai`, label: "紹介", icon: "🗞️" },
 ];
 ---
 
@@ -15,39 +22,114 @@ const items = [
 
 <nav id="sunMenu" class="sunMenu" data-open="false" aria-label="site navigation">
   <div class="sunInner">
-    {items.map((it) => (
-      <a href={it.href} class="sunItem">
-        <span aria-hidden="true">{it.icon}</span>
-        <span>{it.label}</span>
+    {topItems.map((it) => (
+      <a href={it.href} class="sunLink">
+        <span class="sunIcon" aria-hidden="true">{it.icon}</span>
+        <span class="sunLabel">{it.label}</span>
+      </a>
+    ))}
+
+    <div class="sunDivider" aria-hidden="true">———</div>
+
+    {catItems.map((it) => (
+      <a href={it.href} class="sunLink">
+        <span class="sunIcon" aria-hidden="true">{it.icon}</span>
+        <span class="sunLabel">{it.label}</span>
       </a>
     ))}
   </div>
+
 </nav>
+<style>
+  .sunMenu {
+    width: 150px;              /* slimmer overall width */
+    max-width: 70vw;
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(4px);
+    border-right: 1px solid rgba(0,0,0,0.06);
+  }
+
+  .sunInner {
+    padding: 10px 10px;
+  }
+
+  .sunLink {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    padding: 4px 0;
+    text-decoration: none;
+    color: var(--ink);
+    font-size: 0.88rem;
+    letter-spacing: 0.02em;
+  }
+
+  .sunIcon {
+    width: 1.2em;
+    text-align: center;
+    font-size: 0.95em;
+  }
+
+  .sunLabel {
+    font-size: 0.88rem;
+  }
+
+  .sunDivider {
+    margin: 6px 0;
+    height: 1px;
+    background: rgba(0,0,0,0.08);
+    font-size: 0;
+  }
+</style>
 
 <script is:inline>
-  document.addEventListener("DOMContentLoaded", () => {
-    const btn = document.getElementById("sunFab");
-    const menu = document.getElementById("sunMenu");
-    const page = document.getElementById("pageWrap");
+  (function () {
+    function onReady(fn) {
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", fn, { once: true });
+      } else {
+        fn();
+      }
+    }
 
-    const setOpen = (next) => {
-      menu.dataset.open = next ? "true" : "false";
-      page.dataset.shift = next ? "true" : "false";
-      btn.setAttribute("aria-expanded", next ? "true" : "false");
-    };
+    onReady(function () {
+      var btn = document.getElementById("sunFab");
+      var menu = document.getElementById("sunMenu");
+      var page = document.getElementById("pageWrap");
+      if (!btn || !menu || !page) return;
 
-    btn?.addEventListener("click", () => {
-      const open = menu.dataset.open === "true";
-      setOpen(!open);
+      function setOpen(next) {
+        menu.setAttribute("data-open", next ? "true" : "false");
+        page.setAttribute("data-shift", next ? "true" : "false");
+        btn.setAttribute("aria-expanded", next ? "true" : "false");
+      }
+
+      btn.addEventListener("click", function () {
+        var open = menu.getAttribute("data-open") === "true";
+        setOpen(!open);
+      });
+
+      document.addEventListener("keydown", function (e) {
+        if (e && e.key === "Escape") setOpen(false);
+      });
+
+      menu.addEventListener("click", function (e) {
+        var t = e && e.target;
+        var a = null;
+        if (t && t.closest) a = t.closest("a");
+        if (a) setOpen(false);
+      });
+
+      // click outside closes
+      document.addEventListener("click", function (e) {
+        var t = e && e.target;
+        if (!t) return;
+        var open = menu.getAttribute("data-open") === "true";
+        if (!open) return;
+        if (btn.contains(t)) return;
+        if (menu.contains(t)) return;
+        setOpen(false);
+      });
     });
-
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") setOpen(false);
-    });
-
-    menu?.addEventListener("click", (e) => {
-      const a = e.target?.closest?.("a");
-      if (a) setOpen(false);
-    });
-  });
+  })();
 </script>

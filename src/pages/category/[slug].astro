@@ -1,0 +1,50 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { getCollection } from "astro:content";
+import ArticleList from "../../components/ArticleList.astro";
+import { categoryMeta } from "../../components/category";
+
+type Category = "雑記" | "分析" | "創作" | "紹介";
+
+const BASE = import.meta.env.BASE_URL.endsWith("/")
+  ? import.meta.env.BASE_URL
+  : import.meta.env.BASE_URL + "/";
+
+export async function getStaticPaths() {
+  // categoryMeta の slug から自動生成
+  return Object.entries(categoryMeta).map(([name, meta]) => ({
+    params: { slug: meta.slug },
+    props: { category: name as Category, slug: meta.slug },
+  }));
+}
+
+const { category, slug } = Astro.props as { category: Category; slug: string };
+
+const postsAll = await getCollection(
+  "posts",
+  ({ data }) => !data.draft && data.category === category
+);
+
+const posts = postsAll.sort((a, b) => (a.data.date < b.data.date ? 1 : -1));
+
+const icon = categoryMeta[category].icon;
+
+// サブ文（好みで）
+const blurb: Record<Category, string> = {
+  雑記: "日誌やエッセイ。",
+  分析: "概念の整理、読解、重めの考察。",
+  創作: "小説・詩・絵・音楽などの創作。",
+  紹介: "最近ハマったもの、ニュース/作品/学問の紹介。",
+};
+---
+<BaseLayout title={`${icon} ${category} | かもねぎ通信`}>
+  <div style="display:flex; align-items:baseline; justify-content:space-between; gap:12px;">
+    <h2 class="h2" style="margin:0;">{icon} {category}</h2>
+    <a class="small" href={`${BASE}all`} style="text-decoration:none; color:var(--muted);">記事一覧</a>
+  </div>
+
+  <div class="small">{blurb[category]}</div>
+  <div class="hr"></div>
+
+  <ArticleList posts={posts} title="記事一覧" />
+</BaseLayout>

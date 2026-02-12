@@ -289,44 +289,25 @@ a:hover { opacity: 0.92; }
   gap: 6px;
 }
 
+
 .iconRow img {
-  width: 40px;
-  height: 40px;
+  width: 28px;
+  height: 28px;
   object-fit: cover;
   border-radius: 4px;
   opacity: 1.0;
-
-  /* 浮かせない */
   box-shadow: none;
   filter: none;
 }
 
-/* スマホでは少し控えめに */
 @media (max-width: 860px) {
   .iconRow img {
-    width: 36px;
-    height: 36px;
-    opacity: 1.0;
+    width: 24px;
+    height: 24px;
   }
 }
 
-.cal-day {
-  position: relative;
-}
 
-.cal-today {
-  position: absolute;
-  bottom: 4px;
-  right: 4px;
-  width: 20px;
-  height: 20px;
-  object-fit: cover;
-  opacity: 1.0;
-
-  /* 浮かせない */
-  box-shadow: none;
-  border-radius: 4px;
-}
 
 .snsRow {
   display: flex;
@@ -354,4 +335,60 @@ a:hover { opacity: 0.92; }
 section.footnotes > h2,
 section.footnotes > h3 {
   display: none;
+}
+
+
+/* ===== Category subtle tones ===== */
+
+/* category label tint */
+.postRow .category {
+  font-weight: 500;
+}
+
+.postRow[data-category="雑記"] .category {
+  color: #6a6a6a;
+}
+
+.postRow[data-category="分析"] .category {
+  color: #5c6f7a;
+}
+
+.postRow[data-category="創作"] .category {
+  color: #7a5c7a;
+}
+
+.postRow[data-category="紹介"] .category {
+  color: #6f7a5c;
+}
+
+/* optional very subtle left accent line */
+.postRow {
+  position: relative;
+}
+
+.postRow::before {
+  content: "";
+  position: absolute;
+  left: -6px;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 2px;
+  opacity: 0.35;
+}
+
+.postRow[data-category="雑記"]::before {
+  background: #999;
+}
+
+.postRow[data-category="分析"]::before {
+  background: #6f8896;
+}
+
+.postRow[data-category="創作"]::before {
+  background: #9a6f9a;
+}
+
+.postRow[data-category="紹介"]::before {
+  background: #8a9a6f;
 }

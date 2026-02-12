@@ -3,6 +3,10 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 import { getCollection } from "astro:content";
 import { categoryMeta } from "../../components/category";
 
+const BASE = import.meta.env.BASE_URL.endsWith("/")
+  ? import.meta.env.BASE_URL
+  : import.meta.env.BASE_URL + "/";
+
 export async function getStaticPaths() {
   const posts = await getCollection("posts", ({ data }) => !data.draft);
   return posts.map((p) => ({ params: { slug: p.slug }, props: { post: p } }));
@@ -11,16 +15,47 @@ export async function getStaticPaths() {
 const { post } = Astro.props;
 const meta = categoryMeta[post.data.category];
 const { Content } = await post.render();
+
+function thumbSrc(raw?: string) {
+  if (!raw) return null;
+  if (raw.startsWith("http://") || raw.startsWith("https://")) return raw;
+  if (raw.startsWith("/")) return `${BASE}${raw.slice(1)}`;
+  return `${BASE}${raw.replace(/^\/+/, "")}`;
+}
 ---
 <BaseLayout title={`${post.data.title} | かもねぎ通信`}>
   <article class="plainArticle">
-    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
-      <span class="badge">
+    {post.data.thumbnail ? (
+      <div class="heroThumb" aria-hidden="true">
+        <img
+          src={thumbSrc(post.data.thumbnail) ?? post.data.thumbnail}
+          alt=""
+          class="heroImg"
+          loading="lazy"
+        />
+      </div>
+    ) : null}
+    <div class="articleMeta">
+      <span class="metaLeft">
         <span aria-hidden="true">{meta.icon}</span>
-        <a href={`${import.meta.env.BASE_URL}${meta.slug}`} style="text-decoration:none;">{post.data.category}</a>
+        <a href={`${BASE}category/${meta.slug}`} class="categoryLink">
+          {post.data.category}
+        </a>
       </span>
+
       <span class="small mono">{post.data.date}</span>
-      {post.data.tags?.length ? <span class="small">#{post.data.tags.join(" #")}</span> : null}
+
+      {post.data.tags?.length
+        ? (
+            <span class="small tags">
+              {post.data.tags.map((t) => (
+                <>
+                  <a href={`${BASE}tags/${encodeURIComponent(t)}`} class="tagLink">#{t}</a>{" "}
+                </>
+              ))}
+            </span>
+          )
+        : null}
     </div>
 
     <h1 class="h1">{post.data.title}</h1>
@@ -35,6 +70,21 @@ const { Content } = await post.render();
   .plainArticle {
     padding: 0;
     margin: 0;
+  }
+
+  .heroThumb {
+    margin: 0 0 12px;
+    overflow: hidden;
+    border: none;
+    background: none;
+  }
+
+  .heroImg {
+    display: block;
+    width: auto;
+    max-width: 100%;
+    height: auto; /* 元の縦横比を完全維持 */
+    max-height: clamp(360px, 55vw, 720px);
   }
 
   .prose :global(p) {
@@ -63,5 +113,44 @@ const { Content } = await post.render();
     border-left: 3px solid var(--line);
     background: rgba(255,255,255,0.35);
     border-radius: 10px;
+  }
+
+  .articleMeta {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: baseline;
+    font-size: 0.9em;
+    color: var(--muted);
+  }
+
+  .metaLeft {
+    display: flex;
+    gap: 6px;
+    align-items: baseline;
+  }
+
+  .categoryLink {
+    text-decoration: none;
+    color: var(--muted);
+  }
+
+  .categoryLink:hover {
+    opacity: 0.75;
+  }
+
+  .tags {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .tagLink {
+    text-decoration: none;
+    color: var(--muted);
+  }
+
+  .tagLink:hover {
+    opacity: 0.75;
   }
 </style>

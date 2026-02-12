@@ -1,0 +1,47 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { getCollection } from "astro:content";
+import ArticleList from "../../components/ArticleList.astro";
+
+const BASE = import.meta.env.BASE_URL.endsWith("/")
+  ? import.meta.env.BASE_URL
+  : import.meta.env.BASE_URL + "/";
+
+export async function getStaticPaths() {
+  const posts = await getCollection("posts", ({ data }) => !data.draft);
+
+  const tags = new Set<string>();
+  for (const p of posts) for (const t of p.data.tags ?? []) tags.add(t);
+
+  return Array.from(tags).map((tag) => ({
+    // params は「生のタグ文字列」でOK（ビルド時にAstroが適切にエンコードしてパス生成します）
+    params: { tag },
+  }));
+}
+
+// URLパラメータはエンコードされている可能性があるので decode して扱う
+const rawParam = (Astro.params.tag ?? "") as string;
+const tag = decodeURIComponent(rawParam);
+
+const posts = await getCollection("posts", ({ data }) =>
+  !data.draft && (data.tags ?? []).includes(tag)
+);
+
+// 新しい順
+posts.sort((a, b) => (a.data.date < b.data.date ? 1 : -1));
+---
+
+<BaseLayout title={`#${tag} | かもねぎ通信`}>
+  <div style="display:flex; align-items:baseline; justify-content:space-between; gap:12px;">
+    <h2 class="h2" style="margin:0;">#{tag}</h2>
+    <a class="small mono" href={`${BASE}tags`} style="text-decoration:none;">タグ一覧</a>
+  </div>
+
+  <div class="hr"></div>
+
+  <ArticleList posts={posts} title="記事" />
+</BaseLayout>
+
+<style>
+  a:hover { opacity: 0.75; }
+</style>

@@ -3,6 +3,7 @@ title: "鴨が葱を食している！"
 date: "2026-02-12"
 category: "雑記"
 tags: ["雑記"]
+thumbnail: "/images/thumbs/kamo.jpg"
 draft: false
 ---
 ### １　暇な時間がある

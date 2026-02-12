@@ -2,17 +2,15 @@
 type Plan = {
   date: string;
   title: string;
-  category: "しんぶん" | "自然と科学" | "文化と芸術" | "せいかつ" | "研究室" | "雑記";
+  category: "雑記" | "分析" | "創作" | "紹介";
   status?: string;
 };
 
 const categoryIcon: Record<Plan["category"], string> = {
-  しんぶん: "📰",
-  自然と科学: "🪴",
-  文化と芸術: "🎨",
-  せいかつ: "🍲",
-  研究室: "📎",
-  雑記: "✍️",
+  雑記: "🗒️",
+  分析: "🪓",
+  創作: "🪄",
+  紹介: "🗞️",
 };
 
 const { plans, limit, title = "執筆予定" } = Astro.props as {
@@ -36,7 +34,7 @@ const shown = typeof limit === "number" ? plans.slice(0, limit) : plans;
   <ul class="postList">
     {shown.map((p) => (
       <li>
-        <a class="postRow" href={`${BASE}date/${p.date}`}>
+        <a class="postRow" data-category={p.category} href={`${BASE}date/${p.date}`}>
           <span class="left">
             <span class="icon" aria-hidden="true">{categoryIcon[p.category]}</span>
             <span class="category">{p.category}</span>
@@ -87,9 +85,10 @@ const shown = typeof limit === "number" ? plans.slice(0, limit) : plans;
 
   .planMark {
     margin-left: 4px;
-    font-weight: 500;           /* 少しだけ芯を出す */
-    font-size: 0.9em;
-    color: color-mix(in srgb, var(--ink) 55%, var(--muted));
+    font-weight: 400;
+    font-size: 0.88em;
+    color: var(--muted);
+    opacity: 0.9;
   }
 
   @media (max-width: 640px) {

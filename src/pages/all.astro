@@ -15,9 +15,8 @@ const posts = [...postsAll].sort((a, b) => {
   return a.slug < b.slug ? 1 : -1;
 });
 
-const categories = Array.from(new Set(posts.map((p) => p.data.category))).sort(
-  (a, b) => (a > b ? 1 : -1)
-);
+// 現行カテゴリ（4分類）を常に表示（記事が0でも壊れない）
+const categories = Object.keys(categoryMeta) as Array<keyof typeof categoryMeta>;
 
 function safeTags(tags: unknown): string[] {
   return Array.isArray(tags) ? tags.filter((t) => typeof t === "string") : [];
@@ -39,12 +38,12 @@ const data = posts.map((p) => ({
   </div>
 
   <div class="tools">
-    <input id="q" class="q" type="search" placeholder="タイトル / タグ で検索（例：鳥、分類、#数学）" />
+    <input id="q" class="q" type="search" placeholder="タイトル / タグ / カテゴリで検索（例：#創刊、分析、音楽）" />
 
     <select id="cat" class="sel">
       <option value="">すべてのカテゴリ</option>
       {categories.map((c) => (
-        <option value={c}>{c}</option>
+        <option value={c}>{categoryMeta[c].icon} {c}</option>
       ))}
     </select>
 
@@ -71,10 +70,10 @@ const data = posts.map((p) => ({
         data-date={it.date}
         data-slug={it.slug}
       >
-        <a class="postRow" href={`${BASE}posts/${it.slug}`}>
+        <a class="postRow" data-category={it.category} href={`${BASE}posts/${it.slug}`}>
           <span class="left">
             <span class="icon" aria-hidden="true">{categoryMeta[it.category].icon}</span>
-            <span class="cat">{it.category}</span>
+            <span class="category">{it.category}</span>
             <span class="sep">｜</span>
             <strong class="title">{it.title}</strong>
           </span>
@@ -162,7 +161,7 @@ const data = posts.map((p) => ({
     .left { display:flex; gap:6px; align-items:baseline; flex-wrap:wrap; }
     .right { display:flex; gap:10px; align-items:baseline; color: var(--muted); font-size: 0.9em; white-space: nowrap; }
     .icon { font-size: 1em; }
-    .cat { color: var(--muted); font-size: 0.9em; }
+    .category { color: var(--muted); font-size: 0.9em; }
     .sep { color: var(--muted); }
     .tags { color: var(--muted); }
 
