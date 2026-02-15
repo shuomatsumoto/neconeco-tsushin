@@ -1,6 +1,7 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { getCollection } from "astro:content";
+import ListIndexHeader from "../../components/ListIndexHeader.astro";
 
 const BASE = import.meta.env.BASE_URL.endsWith("/")
   ? import.meta.env.BASE_URL
@@ -20,10 +21,7 @@ const seriesList = Array.from(map.entries())
 ---
 
 <BaseLayout title="連載 | かもねぎ通信">
-  <div style="display:flex; align-items:baseline; justify-content:space-between; gap:12px;">
-    <h2 class="h2" style="margin:0;">連載</h2>
-    <div class="small mono">{seriesList.length} series</div>
-  </div>
+  <ListIndexHeader title="連載" countLabel={`${seriesList.length} series`} />
 
   <div class="hr"></div>
 

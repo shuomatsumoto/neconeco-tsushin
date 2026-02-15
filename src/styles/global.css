@@ -13,6 +13,14 @@
   --max: 1120px;
   --float-panel-top: 62px;
   --float-panel-top-mobile: 96px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --fs-list-title: clamp(1.38rem, 2.9vw, 1.78rem);
+  --fs-list-summary: 0.86rem;
+  --fs-list-meta: 0.82rem;
 }
 
 @font-face {

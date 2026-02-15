@@ -212,11 +212,16 @@ const BASE = import.meta.env.BASE_URL.endsWith("/")
         window.addEventListener("scroll", syncPanelTop, { passive: true });
 
         function setOpen(next) {
+          var prev = form.getAttribute("data-open") === "true";
+          if (prev === next) return;
           form.setAttribute("data-open", next ? "true" : "false");
           btn.setAttribute("aria-expanded", next ? "true" : "false");
           if (next) {
+            window.dispatchEvent(new CustomEvent("floatingPanelOpen", { detail: "search" }));
             syncPanelTop();
             setTimeout(function () { input.focus(); }, 80);
+          } else {
+            btn.focus();
           }
         }
 
@@ -236,6 +241,12 @@ const BASE = import.meta.env.BASE_URL.endsWith("/")
           if (!open) return;
           if (btn.contains(t)) return;
           if (form.contains(t)) return;
+          setOpen(false);
+        });
+
+        window.addEventListener("floatingPanelOpen", function (e) {
+          var kind = e && e.detail;
+          if (kind === "search") return;
           setOpen(false);
         });
       });

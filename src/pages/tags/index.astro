@@ -1,6 +1,7 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { getCollection } from "astro:content";
+import ListIndexHeader from "../../components/ListIndexHeader.astro";
 
 const BASE = import.meta.env.BASE_URL.endsWith("/")
   ? import.meta.env.BASE_URL
@@ -21,10 +22,7 @@ const tags = Array.from(map.entries())
 ---
 
 <BaseLayout title="タグ | かもねぎ通信">
-  <div style="display:flex; align-items:baseline; justify-content:space-between; gap:12px;">
-    <h2 class="h2" style="margin:0;">タグ</h2>
-    <div class="small mono">{tags.length} tags</div>
-  </div>
+  <ListIndexHeader title="タグ" countLabel={`${tags.length} tags`} />
 
   <div class="hr"></div>
 

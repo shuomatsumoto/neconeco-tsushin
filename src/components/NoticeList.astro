@@ -1,6 +1,6 @@
 ---
 type Notice = {
-  date: string;
+  date?: string;
   title: string;
   href?: string;
 };
@@ -12,6 +12,16 @@ const { notices, limit, title = "お知らせ" } = Astro.props as {
 };
 
 const shown = typeof limit === "number" ? notices.slice(0, limit) : notices;
+const grouped = shown.reduce((acc, n) => {
+  const dateLabel = (n.date ?? "").trim() || "（未定）";
+  const last = acc[acc.length - 1];
+  if (last && last.date === dateLabel) {
+    last.items.push(n);
+    return acc;
+  }
+  acc.push({ date: dateLabel, items: [n] });
+  return acc;
+}, [] as Array<{ date: string; items: Notice[] }>);
 ---
 <section class="plainSection">
   <div class="sectionHead">
@@ -19,19 +29,23 @@ const shown = typeof limit === "number" ? notices.slice(0, limit) : notices;
   </div>
 
   <ul class="postList">
-    {shown.map((n) => (
+    {grouped.map((g) => (
       <li>
-        {n.href ? (
-          <a class="noticeRow" href={n.href}>
-            <strong class="title">{n.title}</strong>
-            <span class="date">{n.date}</span>
-          </a>
-        ) : (
-          <div class="noticeRow">
-            <strong class="title">{n.title}</strong>
-            <span class="date">{n.date}</span>
-          </div>
-        )}
+        <div class="noticeRow">
+          <span class="date">{g.date}</span>
+          <ul class="itemsList">
+            {g.items.map((n) => (
+              <li class="noticeItem">
+                <span class="bullet" aria-hidden="true">・</span>
+                {n.href ? (
+                  <a class="title link" href={n.href}>{n.title}</a>
+                ) : (
+                  <span class="title">{n.title}</span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
       </li>
     ))}
   </ul>
@@ -48,38 +62,62 @@ const shown = typeof limit === "number" ? notices.slice(0, limit) : notices;
     color: var(--muted);
     letter-spacing: 0.04em;
   }
+
   .postList { list-style: none; padding: 0; margin: 0; }
 
   .noticeRow {
-    display: flex;
-    justify-content: space-between;
-    gap: 8px;
-    align-items: baseline;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 10px;
+    align-items: start;
     padding: 5px 0;
     border-bottom: 1px dotted var(--line);
-    text-decoration: none;
     color: var(--muted);
-  }
-
-  a.noticeRow:hover {
-    opacity: 0.86;
-  }
-
-  .title {
-    font-size: 0.9em;
-    font-weight: 400;
-    opacity: 0.96;
   }
 
   .date {
     font-size: 0.76em;
-    color: var(--muted);
     opacity: 0.92;
     white-space: nowrap;
   }
 
+  .itemsList {
+    min-width: 0;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 2px;
+    font-size: 0.9em;
+    font-weight: 400;
+    opacity: 0.96;
+    line-height: 1.45;
+  }
+
+  .noticeItem {
+    display: flex;
+    align-items: baseline;
+  }
+
+  .bullet {
+    margin-right: 0.1em;
+  }
+
+  .title { color: inherit; }
+
+  .link {
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .link:hover { opacity: 0.86; }
+
   @media (max-width: 640px) {
-    .noticeRow { flex-direction: column; gap: 4px; }
+    .noticeRow {
+      grid-template-columns: 1fr;
+      gap: 2px;
+    }
+
     .date { white-space: normal; }
   }
 </style>

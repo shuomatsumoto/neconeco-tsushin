@@ -118,6 +118,11 @@ const topItems = [
         if (next) syncPanelTop();
         menu.setAttribute("data-open", next ? "true" : "false");
         btn.setAttribute("aria-expanded", next ? "true" : "false");
+        if (next) {
+          window.dispatchEvent(new CustomEvent("floatingPanelOpen", { detail: "sun" }));
+        } else {
+          btn.focus();
+        }
       }
 
       btn.addEventListener("click", function () {
@@ -144,6 +149,12 @@ const topItems = [
         if (!open) return;
         if (btn.contains(t)) return;
         if (menu.contains(t)) return;
+        setOpen(false);
+      });
+
+      window.addEventListener("floatingPanelOpen", function (e) {
+        var kind = e && e.detail;
+        if (kind === "sun") return;
         setOpen(false);
       });
     });

@@ -1,16 +1,8 @@
 ---
 import type { CollectionEntry } from "astro:content";
 
-type Plan = {
-  date: string; // YYYY-MM-DD
-  title: string;
-  category: "しんぶん" | "自然と科学" | "文化と芸術" | "せいかつ" | "研究室" | "雑記";
-  status?: string;
-};
-
-const { posts, plans = [], year, month } = Astro.props as {
+const { posts, year, month } = Astro.props as {
   posts: CollectionEntry<"posts">[];
-  plans?: Plan[];
   year?: number;
   month?: number; // 1-12
 };
@@ -29,8 +21,6 @@ const monthPrefix = `${Y}-${String(M).padStart(2, "0")}-`;
 
 const postDates = new Set(posts.map((p) => p.data.date).filter((d) => d.startsWith(monthPrefix)));
 
-const planDates = new Set(plans.map((p) => p.date).filter((d) => d.startsWith(monthPrefix)));
-
 const weeks: Array<Array<number | null>> = [];
 let w: Array<number | null> = [];
 for (let i = 0; i < startDow; i++) w.push(null);
@@ -46,7 +36,7 @@ if (w.length) {
   weeks.push(w);
 }
 
-const monthLabelInitial = `〈${Y}年${M}月〉`;
+const monthLabelInitial = `${Y}年${M}月`;
 const dow = ["日", "月", "火", "水", "木", "金", "土"];
 function ymd(day: number) {
   return `${Y}-${String(M).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
@@ -75,25 +65,19 @@ const BASE = import.meta.env.BASE_URL.endsWith("/")
 
       const key = ymd(day);
       const hasPost = postDates.has(key);
-      const hasPlan = planDates.has(key);
 
       return (
         <a href={`${BASE}date/${key}`} class="calLink">
           <div
             class="calCell"
             data-ymd={key}
-            title={hasPost ? "記事あり" : hasPlan ? "執筆予定あり" : ""}
+            title={hasPost ? "記事あり" : ""}
           >
             <span class="calNum mono">{day}</span>
-            {/* ● = 記事あり / ○ = 予定あり */}
+            {/* ● = 記事あり */}
             {hasPost && (
               <span aria-hidden="true" class="mark">
                 ●
-              </span>
-            )}
-            {!hasPost && hasPlan && (
-              <span aria-hidden="true" class="mark">
-                ○
               </span>
             )}
           </div>
@@ -145,7 +129,7 @@ const BASE = import.meta.env.BASE_URL.endsWith("/")
     })();
   </script>
 
-  <div class="calLegend small">● = 記事がある / ○ = 執筆予定がある</div>
+  <div class="calLegend small">● = 記事がある</div>
 
   <style>
     .plainSection {

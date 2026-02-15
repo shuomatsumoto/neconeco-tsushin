@@ -1,0 +1,20 @@
+---
+const { title, countLabel } = Astro.props as {
+  title: string;
+  countLabel: string;
+};
+---
+<div class="listIndexHead">
+  <h2 class="h2" style="margin:0;">{title}</h2>
+  <div class="small mono">{countLabel}</div>
+</div>
+
+<style>
+  .listIndexHead {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+</style>

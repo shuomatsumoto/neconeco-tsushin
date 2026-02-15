@@ -1,15 +1,7 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { getCollection } from "astro:content";
-import plans from "../../data/plans.json";
 import { toYMD } from "../../components/category";
-
-type Plan = {
-  date: string;
-  title: string;
-  category: string;
-  status?: string;
-};
 
 const BASE = import.meta.env.BASE_URL.endsWith("/")
   ? import.meta.env.BASE_URL
@@ -17,10 +9,31 @@ const BASE = import.meta.env.BASE_URL.endsWith("/")
 
 export async function getStaticPaths() {
   const posts = await getCollection("posts", ({ data }) => !data.draft);
-  const planDates = (plans as Plan[]).map((p) => p.date);
   const postDates = posts.map((p) => p.data.date);
-  const dates = Array.from(new Set([...postDates, ...planDates]));
-  return dates.map((ymd) => ({ params: { ymd } }));
+
+  // Build month set from existing content plus current month,
+  // then generate every day in those months so "empty days" are routable.
+  const monthSet = new Set<string>();
+  for (const d of postDates) {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(d)) monthSet.add(d.slice(0, 7));
+  }
+
+  const now = new Date();
+  const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  monthSet.add(currentMonth);
+
+  const dates: string[] = [];
+  for (const ym of monthSet) {
+    const y = Number(ym.slice(0, 4));
+    const m = Number(ym.slice(5, 7));
+    if (!Number.isFinite(y) || !Number.isFinite(m)) continue;
+    const lastDay = new Date(y, m, 0).getDate();
+    for (let day = 1; day <= lastDay; day++) {
+      dates.push(`${ym}-${String(day).padStart(2, "0")}`);
+    }
+  }
+
+  return dates.sort().map((ymd) => ({ params: { ymd } }));
 }
 
 const { ymd } = Astro.params as { ymd: string };
@@ -30,9 +43,6 @@ const postsAll = await getCollection(
   "posts",
   ({ data }) => !data.draft && data.date === ymd
 );
-
-// 予定
-const dayPlans = (plans as Plan[]).filter((p) => p.date === ymd);
 ---
 <BaseLayout title={`${ymd} | かもねぎ通信`}>
   <section class="plainSection">
@@ -63,31 +73,10 @@ const dayPlans = (plans as Plan[]).filter((p) => p.date === ymd);
         );
       })}
 
-      {/* 予定 */}
-      {dayPlans.map((p) => {
-        return (
-          <li>
-            <a class="postRow" href={`${BASE}date/${p.date}`}>
-              <span class="left">
-                <span class="category">{p.category}</span>
-                <span class="sep">｜</span>
-                <strong class="title">
-                  {p.title}
-                  <span class="planMark">（予定）</span>
-                </strong>
-              </span>
-
-              <span class="right">
-                <span class="date">{toYMD(p.date)}</span>
-              </span>
-            </a>
-          </li>
-        );
-      })}
     </ul>
 
-    {!postsAll.length && !dayPlans.length && (
-      <div class="small">この日には記事も予定もありません。</div>
+    {!postsAll.length && (
+      <div class="small">この日には記事がありません。</div>
     )}
   </section>
 
@@ -147,13 +136,6 @@ const dayPlans = (plans as Plan[]).filter((p) => p.date === ymd);
     }
 
     .tags {
-      color: var(--muted);
-    }
-
-    .planMark {
-      margin-left: 4px;
-      font-weight: normal;
-      font-size: 0.9em;
       color: var(--muted);
     }
 

@@ -3,8 +3,8 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import { getCollection } from "astro:content";
 import Calendar from "../components/Calendar.astro";
 import ArticleList from "../components/ArticleList.astro";
-import plans from "../data/plans.json";
 import notices from "../data/notices.json";
+import schedules from "../data/schedules.json";
 import NoticeList from "../components/NoticeList.astro";
 
 const postsAll = await getCollection("posts", ({ data }) => !data.draft);
@@ -18,13 +18,17 @@ const posts = postsAll.sort((a, b) => (a.data.date < b.data.date ? 1 : -1));
       </section>
 
       <section class="homeSection">
-        <Calendar posts={posts} plans={plans} />
+        <Calendar posts={posts} />
       </section>
     </main>
 
     <aside class="homeCol homeAside">
       <section class="homeSection">
-        <NoticeList notices={notices} title="〈お知らせ〉" limit={8} />
+        <NoticeList notices={notices} title="お知らせ" limit={8} />
+      </section>
+
+      <section class="homeSection">
+        <NoticeList notices={schedules} title="予定" limit={8} />
       </section>
     </aside>
   </div>
