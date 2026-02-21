@@ -31,6 +31,11 @@ const translation = defineCollection({
   schema: entrySchema,
 });
 
+const research = defineCollection({
+  type: "content",
+  schema: entrySchema,
+});
+
 const novel = defineCollection({
   type: "content",
   schema: entrySchema,
@@ -39,5 +44,6 @@ const novel = defineCollection({
 export const collections = {
   posts: post,
   translation,
+  research,
   novel,
 };

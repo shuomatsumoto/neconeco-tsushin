@@ -27,6 +27,7 @@ function isNotePost(data: { kind?: string }) {
 
 const postItems = await getCollection("posts", ({ data }) => !data.draft);
 const translationItems = await getCollection("translation", ({ data }) => !data.draft);
+const researchItems = await getCollection("research", ({ data }) => !data.draft);
 const novelItems = await getCollection("novel", ({ data }) => !data.draft);
 
 const rows: Row[] = [
@@ -41,7 +42,7 @@ const rows: Row[] = [
     sortKey: `posts:${p.slug}`,
   })),
   ...translationItems.map((p) => ({
-    href: `${BASE}translation/${p.slug}`,
+    href: `${BASE}study/${p.slug}`,
     title: p.data.title,
     summary: p.data.summary ?? "",
     date: p.data.date,
@@ -50,6 +51,16 @@ const rows: Row[] = [
     typeLabel: "翻訳",
     sortKey: `translation:${p.slug}`,
   })),
+  ...researchItems.map((p) => ({
+    href: `${BASE}study/${p.slug}`,
+    title: p.data.title,
+    summary: p.data.summary ?? "",
+    date: p.data.date,
+    tags: safeTags(p.data.tags),
+    meta: [p.data.category ?? "", p.data.series ?? ""].filter(Boolean).join(" "),
+    typeLabel: "研究",
+    sortKey: `research:${p.slug}`,
+  })),
   ...novelItems.map((p) => ({
     href: `${BASE}novel/${p.slug}`,
     title: p.data.title,
@@ -57,7 +68,7 @@ const rows: Row[] = [
     date: p.data.date,
     tags: safeTags(p.data.tags),
     meta: "",
-    typeLabel: "小説",
+    typeLabel: "創作",
     sortKey: `novel:${p.slug}`,
   })),
 ].sort((a, b) => {

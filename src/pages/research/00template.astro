@@ -1,20 +1,36 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
 ---
-<BaseLayout title="多和田葉子 研究ノート | かもねぎ通信">
+<BaseLayout title="研究ノート テンプレート | かもねぎ通信">
   <section class="notePage">
     <header class="noteHead">
-      <h2 class="h2" style="margin:0;">多和田葉子 研究ノート</h2>
-      <p class="small noteSub">翻訳・インタビュー読解に関するメモと草稿。</p>
+      <h2 class="h2" style="margin:0;">研究ノート題名</h2>
+      <p class="small noteSub">対象・テーマの短い説明（例: マルクス第一巻の読解メモ）。</p>
     </header>
 
     <div class="hr"></div>
 
     <section class="noteBox">
-      <h3 class="noteTitle">ノート</h3>
+      <h3 class="noteTitle">要点</h3>
       <ul class="noteList">
-        <li>論点 1（草稿）</li>
-        <li>論点 2（草稿）</li>
+        <li>論点 1</li>
+        <li>論点 2</li>
+        <li>論点 3</li>
+      </ul>
+    </section>
+
+    <section class="noteBox">
+      <h3 class="noteTitle">メモ</h3>
+      <p class="noteText">
+        本文をここに書く。
+      </p>
+    </section>
+
+    <section class="noteBox">
+      <h3 class="noteTitle">引用・参考</h3>
+      <ul class="noteList">
+        <li>書籍名 / 著者 / 出版年</li>
+        <li>論文名 / URL</li>
       </ul>
     </section>
   </section>
@@ -52,6 +68,12 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     font-size: 0.95rem;
     color: #3f5235;
     font-weight: 600;
+  }
+
+  .noteText {
+    margin: 0;
+    line-height: 1.7;
+    color: var(--ink);
   }
 
   .noteList {

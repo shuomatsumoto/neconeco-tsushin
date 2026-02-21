@@ -1,221 +1,25 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import board from "../../data/translation-board.json";
-
 const BASE = import.meta.env.BASE_URL.endsWith("/")
   ? import.meta.env.BASE_URL
   : import.meta.env.BASE_URL + "/";
-
-function toHref(href?: string) {
-  if (!href) return "";
-  if (href.startsWith("http://") || href.startsWith("https://")) return href;
-  return href.startsWith("/") ? `${BASE}${href.slice(1)}` : `${BASE}${href}`;
-}
-
-function parseLabel(raw: string) {
-  const m = raw.match(/^[\t ]*/)?.[0] ?? "";
-  const spaces = m.replace(/\t/g, "  ").length;
-  const depth = Math.min(4, Math.floor(spaces / 2));
-  const text = raw.replace(/^[\t ]+/, "");
-  return { depth, text };
-}
-
-type BoardItem = { label: string; href?: string };
-type BoardSection = { title: string; items?: BoardItem[] };
-type BoardGroup = { title: string; items?: BoardItem[]; sections?: BoardSection[] };
-
-function hasNextAtDepth(items: BoardItem[], index: number, depth: number) {
-  for (let i = index + 1; i < items.length; i += 1) {
-    const nextDepth = parseLabel(items[i].label).depth;
-    if (nextDepth < depth) return false;
-    if (nextDepth === depth) return true;
-  }
-  return false;
-}
-
-function treePrefix(items: BoardItem[], index: number) {
-  const { depth } = parseLabel(items[index].label);
-  if (depth <= 0) return "";
-
-  let prefix = "";
-  for (let level = 1; level < depth; level += 1) {
-    prefix += hasNextAtDepth(items, index, level) ? "│  " : "   ";
-  }
-  prefix += hasNextAtDepth(items, index, depth) ? "├ " : "└ ";
-  return prefix;
-}
+const nextHref = `${BASE}study`;
 ---
-<BaseLayout title="翻訳・研究 | かもねぎ通信">
-  <section class="boardPage">
-    <header class="boardHead">
-      <h2 class="h2" style="margin:0;">翻訳・研究</h2>
-      <p class="small headSub">{board.description}</p>
-    </header>
-
-    <div class="hr"></div>
-
-    <section class="boardBox" aria-label={board.title}>
-      <h3 class="boardTitle">{board.sectionTitle ?? "翻訳の整理"}</h3>
-      <div class="groupStack">
-        {board.groups?.map((group: BoardGroup) => (
-          <section class="groupBlock" aria-label={group.title}>
-            <h4 class="groupTitle">{group.title}</h4>
-            {group.sections?.length ? (
-              <div class="subGroupStack">
-                {group.sections.map((section) => (
-                  <section class="subGroupBlock" aria-label={section.title}>
-                    <h5 class="subGroupTitle">＜{section.title}＞</h5>
-                    <ul class="itemList">
-                      {section.items?.map((item, idx, arr) => {
-                        const p = parseLabel(item.label);
-                        const prefix = treePrefix(arr, idx);
-                        return (
-                        <li class="itemEntry">
-                          {item.href ? (
-                            <a class="itemLink" href={toHref(item.href)}>
-                              {prefix && <span class="treePrefix">{prefix}</span>}
-                              {p.text}
-                            </a>
-                          ) : (
-                            <span class="itemText">
-                              {prefix && <span class="treePrefix">{prefix}</span>}
-                              {p.text}
-                            </span>
-                          )}
-                        </li>
-                      )})}
-                    </ul>
-                  </section>
-                ))}
-              </div>
-            ) : (
-              <ul class="itemList">
-                {group.items?.map((item, idx, arr) => {
-                  const p = parseLabel(item.label);
-                  const prefix = treePrefix(arr, idx);
-                  return (
-                  <li class="itemEntry">
-                    {item.href ? (
-                      <a class="itemLink" href={toHref(item.href)}>
-                        {prefix && <span class="treePrefix">{prefix}</span>}
-                        {p.text}
-                      </a>
-                    ) : (
-                      <span class="itemText">
-                        {prefix && <span class="treePrefix">{prefix}</span>}
-                        {p.text}
-                      </span>
-                    )}
-                  </li>
-                )})}
-              </ul>
-            )}
-          </section>
-        ))}
-      </div>
-    </section>
+<BaseLayout title="研究・翻訳 | かもねぎ通信">
+  <section class="redirectPage">
+    <p class="small">このページは移動しました。</p>
+    <p><a href={nextHref}>研究・翻訳ページへ移動</a></p>
   </section>
+
+  <script is:inline define:vars={{ nextHref }}>
+    window.location.replace(nextHref);
+  </script>
 </BaseLayout>
 
 <style>
-  .boardPage { width: min(100%, 940px); margin-inline: auto; display: grid; gap: 14px; }
-  .boardHead { display: grid; gap: 4px; }
-  .headSub { margin: 0; color: var(--muted); opacity: 0.8; }
-
-  .boardBox {
-    border: 0;
-    border-radius: 0;
-    background: transparent;
-    padding: 0;
-    display: grid;
-    gap: 10px;
+  .redirectPage {
+    width: min(100%, 940px);
+    margin-inline: auto;
+    padding: 20px 0;
   }
-
-  .boardTitle {
-    margin: 0;
-    font-size: 1.02rem;
-    line-height: 1.35;
-    font-weight: 500;
-  }
-
-  .groupStack { display: grid; gap: 10px; }
-
-  .groupBlock {
-    border: 0;
-    border-radius: 0;
-    padding: 0;
-    display: grid;
-    gap: 0;
-    background: #fff;
-  }
-
-  .groupTitle {
-    margin: 0;
-    padding: 7px 10px;
-    font-size: 0.88rem;
-    color: #3f5235;
-    background: #f3f0e6;
-    line-height: 1.35;
-    letter-spacing: 0.02em;
-    font-weight: 600;
-  }
-
-  .itemList {
-    margin: 0;
-    padding: 8px 10px 10px;
-    list-style: none;
-    display: grid;
-    gap: 0;
-  }
-
-  .itemEntry {
-    line-height: 1.28;
-    min-width: 0;
-  }
-
-  .itemLink,
-  .itemText {
-    font-size: 0.9rem;
-    color: var(--ink);
-    text-decoration: none;
-    overflow-wrap: anywhere;
-    white-space: normal;
-    tab-size: 2;
-  }
-
-  .treePrefix {
-    display: inline-block;
-    white-space: pre;
-    letter-spacing: 0;
-    line-height: 1.28;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-    color: rgba(64, 54, 40, 0.56);
-  }
-
-  .subGroupStack {
-    display: grid;
-    gap: 4px;
-    padding-top: 4px;
-  }
-
-  .subGroupBlock {
-    display: grid;
-    gap: 0;
-  }
-
-  .subGroupBlock .itemList {
-    padding-top: 2px;
-  }
-
-  .subGroupTitle {
-    margin: 0;
-    padding: 4px 10px 2px;
-    font-size: 0.82rem;
-    color: #3f5235;
-    line-height: 1.35;
-    letter-spacing: 0.02em;
-    font-weight: 500;
-  }
-
-  .itemLink:hover { text-decoration: underline; }
 </style>

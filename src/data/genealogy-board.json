@@ -1,0 +1,25 @@
+{
+  "title": "系譜学",
+  "description": "音楽・文学・哲学を、時系列で混ぜて辿るためのボードです。",
+  "groups": [
+    {
+      "title": "入口",
+      "items": [
+        { "label": "  音楽" },
+        { "label": "    はまった音楽家A（草稿）", "href": "/music" },
+        { "label": "  文学" },
+        { "label": "    作品・作家B（草稿）", "href": "/literature-philosophy" },
+        { "label": "  哲学" },
+        { "label": "    概念・思想家C（草稿）", "href": "/literature-philosophy" }
+      ]
+    },
+    {
+      "title": "展開",
+      "items": [
+        { "label": "  影響関係メモ（草稿）" },
+        { "label": "    A → B → C" },
+        { "label": "  アルバム評・読書ノート・概念ノートの接続（草稿）" }
+      ]
+    }
+  ]
+}

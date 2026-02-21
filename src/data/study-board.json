@@ -19,7 +19,7 @@
         {
           "title": "研究",
           "items": [
-            { "label": "  多和田葉子ノート（草稿）", "href": "/research/tawada" }
+            { "label": "  多和田葉子研究ノート（草稿）"}
           ]
         }
       ]
@@ -41,6 +41,17 @@
           "title": "研究",
           "items": [
             { "label": "  研究ノート（草稿）" }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "メラニー・クライン",
+      "sections": [
+        {
+          "title": "研究ノート",
+          "items": [
+            {"label": "「愛、罪そして償い」メモ（1）", "href": "/research/01klein"}
           ]
         }
       ]

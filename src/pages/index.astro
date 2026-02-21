@@ -32,15 +32,15 @@ const posts = postsAll.sort((a, b) => (a.data.date < b.data.date ? 1 : -1));
     </main>
 
     <aside class="homeCol homeAside">
-      <section class="homeSection">
+      <section class="homeSection panelSection">
         <NoticeList notices={news} title="ニュース" limit={8} recentDays={7} />
       </section>
 
-      <section class="homeSection">
+      <section class="homeSection panelSection">
         <NoticeList notices={notices} title="お知らせ" limit={8} recentDays={7} />
       </section>
 
-      <section class="homeSection">
+      <section class="homeSection panelSection">
         <NoticeList notices={schedules} title="予定" limit={8} />
       </section>
     </aside>
@@ -70,6 +70,13 @@ const posts = postsAll.sort((a, b) => (a.data.date < b.data.date ? 1 : -1));
     .homeSection {
       padding: 0;
       margin: 0;
+    }
+
+    .panelSection {
+      border: 1px solid rgba(64, 54, 40, 0.22);
+      border-radius: 0;
+      padding: 10px 12px 8px;
+      background: #fff;
     }
 
     @media (max-width: 900px) {

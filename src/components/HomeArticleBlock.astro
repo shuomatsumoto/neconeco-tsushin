@@ -48,31 +48,29 @@ function thumbSrc(raw?: string) {
 
   {gridPosts.length ? (
     <ul class="postGrid">
-      {gridPosts.map((p) => (
-        <li>
-          <a class="gridPostCard" href={`${BASE}posts/${p.slug}`}>
-            {thumbSrc((p.data as any).thumbnail as string | undefined) ? (
-              <img
-                class="gridThumb post-thumb-wide"
-                src={thumbSrc((p.data as any).thumbnail as string | undefined) ?? ""}
-                alt=""
-                loading="lazy"
-              />
-            ) : null}
-            <div class="gridTitleRow">
-              <strong class="gridTitle post-title-2line">{p.data.title}</strong>
-              {p.data.series ? <span class="seriesBadge post-series-accent">〈{p.data.series}〉</span> : null}
-            </div>
-            <p class="gridDate"><span class="mono">{p.data.date}</span></p>
-            {p.data.summary ? <p class="gridSummary post-summary-2line">{p.data.summary}</p> : null}
-            {p.data.category ? (
-              <p class="summaryCategory">
-                <span class="summaryCategoryText">{p.data.category}</span>
-              </p>
-            ) : null}
-          </a>
-        </li>
-      ))}
+      {gridPosts.map((p) => {
+        const t = thumbSrc((p.data as any).thumbnail as string | undefined);
+        return (
+          <li>
+            <a class={`gridPostCard${t ? "" : " noThumb"}`} href={`${BASE}posts/${p.slug}`}>
+              {t ? <img class="rowThumb post-thumb-wide" src={t} alt="" loading="lazy" /> : null}
+              <div class="rowMain">
+                <div class="gridTitleRow">
+                  <strong class="gridTitle post-title-2line">{p.data.title}</strong>
+                  {p.data.series ? <span class="seriesBadge post-series-accent">〈{p.data.series}〉</span> : null}
+                </div>
+                <p class="gridDate"><span class="mono">{p.data.date}</span></p>
+                {p.data.summary ? <p class="gridSummary post-summary-2line">{p.data.summary}</p> : null}
+                {p.data.category ? (
+                  <p class="summaryCategory">
+                    <span class="summaryCategoryText">{p.data.category}</span>
+                  </p>
+                ) : null}
+              </div>
+            </a>
+          </li>
+        );
+      })}
     </ul>
   ) : null}
 </section>
@@ -130,18 +128,35 @@ function thumbSrc(raw?: string) {
     margin: 0;
     padding: 0;
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px 12px;
+    gap: 0;
+  }
+
+  .postGrid > li {
+    border-bottom: 1px dotted var(--line);
   }
 
   .gridPostCard {
-    display: block;
+    display: grid;
+    grid-template-columns: 148px 1fr;
+    gap: 10px;
     text-decoration: none;
     color: var(--ink);
+    padding: 9px 0;
   }
 
-  .gridThumb {
-    margin: 0 0 5px;
+  .gridPostCard.noThumb {
+    grid-template-columns: 1fr;
+  }
+
+  .rowThumb {
+    margin: 0;
+    height: 100%;
+    min-height: 86px;
+    object-fit: cover;
+  }
+
+  .rowMain {
+    min-width: 0;
   }
 
   .gridTitleRow {
@@ -192,7 +207,12 @@ function thumbSrc(raw?: string) {
   }
 
   @media (max-width: 520px) {
-    .postGrid {
+    .gridPostCard {
+      grid-template-columns: 108px 1fr;
+      gap: 8px;
+    }
+
+    .gridPostCard.noThumb {
       grid-template-columns: 1fr;
     }
   }

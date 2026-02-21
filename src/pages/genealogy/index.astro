@@ -1,0 +1,143 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import GenealogyContent, { frontmatter } from "../../content/genealogy/index.md";
+---
+<BaseLayout title="系譜学 | かもねぎ通信">
+  <section class="genealogyPage">
+    <header class="genealogyHead">
+      <h2 class="h2" style="margin:0;">系譜学</h2>
+      {frontmatter?.description ? <p class="small headSub">{frontmatter.description}</p> : null}
+    </header>
+
+    <div class="hr"></div>
+
+    <article class="genealogyDoc prose">
+      <GenealogyContent />
+    </article>
+  </section>
+
+  <script is:inline>
+    (function () {
+      var codeSelector = [
+        ".genealogyDoc pre[data-language='mermaid'] > code",
+        ".genealogyDoc pre[data-language='marmaid'] > code",
+        ".genealogyDoc pre > code.language-mermaid",
+        ".genealogyDoc pre > code.language-marmaid"
+      ].join(", ");
+      var codes = Array.from(document.querySelectorAll(codeSelector));
+      if (!codes.length) return;
+
+      function setupAndRender(mermaid) {
+        var hosts = [];
+        codes.forEach(function (codeEl) {
+          var pre = codeEl.parentElement;
+          if (!pre) return;
+          var host = document.createElement("div");
+          host.className = "mermaid";
+          host.textContent = codeEl.textContent || "";
+          pre.replaceWith(host);
+          hosts.push(host);
+        });
+        if (!hosts.length) return;
+
+        mermaid.initialize({
+          startOnLoad: false,
+          theme: "base",
+          fontFamily: "inherit",
+          themeVariables: {
+            primaryColor: "#f7f4ea",
+            primaryTextColor: "#2f2a23",
+            primaryBorderColor: "#8c9a7a",
+            lineColor: "#807465",
+            secondaryColor: "#fbfaf6",
+            tertiaryColor: "#f2eee4",
+          },
+          flowchart: {
+            curve: "basis",
+            htmlLabels: true,
+          },
+        });
+        mermaid.run({ querySelector: ".genealogyDoc .mermaid" });
+      }
+
+      function loadScript(src, onDone, onFail) {
+        var s = document.createElement("script");
+        s.src = src;
+        s.async = true;
+        s.onload = onDone;
+        s.onerror = onFail;
+        document.head.appendChild(s);
+      }
+
+      function start() {
+        if (window.mermaid) {
+          setupAndRender(window.mermaid);
+          return;
+        }
+        loadScript(
+          "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js",
+          function () {
+            if (window.mermaid) setupAndRender(window.mermaid);
+          },
+          function () {
+            loadScript(
+              "https://unpkg.com/mermaid@11/dist/mermaid.min.js",
+              function () {
+                if (window.mermaid) setupAndRender(window.mermaid);
+              },
+              function () {
+                // 読み込み失敗時は pre/code を残して可読性を確保
+              }
+            );
+          }
+        );
+      }
+
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", start, { once: true });
+      } else {
+        start();
+      }
+    })();
+  </script>
+</BaseLayout>
+
+<style>
+  .genealogyPage {
+    width: min(100%, 940px);
+    margin-inline: auto;
+    display: grid;
+    gap: 14px;
+  }
+
+  .genealogyHead {
+    display: grid;
+    gap: 4px;
+  }
+
+  .headSub {
+    margin: 0;
+    color: var(--muted);
+    opacity: 0.8;
+  }
+
+  .genealogyDoc {
+    max-width: 860px;
+  }
+
+  .genealogyDoc :global(h3) {
+    margin-top: 1.2em;
+    margin-bottom: 0.4em;
+    font-size: 1rem;
+    color: #3f5235;
+    font-weight: 600;
+  }
+
+  .genealogyDoc :global(.mermaid) {
+    margin: 10px 0 14px;
+    border: 1px solid rgba(64, 54, 40, 0.2);
+    background: #fff;
+    padding: 10px;
+    overflow-x: auto;
+  }
+</style>

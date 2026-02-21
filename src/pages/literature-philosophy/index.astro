@@ -1,6 +1,6 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import board from "../../data/novel-board.json";
+import board from "../../data/literature-philosophy-board.json";
 
 const BASE = import.meta.env.BASE_URL.endsWith("/")
   ? import.meta.env.BASE_URL
@@ -43,10 +43,10 @@ function treePrefix(items: BoardItem[], index: number) {
   return prefix;
 }
 ---
-<BaseLayout title="創作 | かもねぎ通信">
+<BaseLayout title="文学・哲学 | かもねぎ通信">
   <section class="boardPage">
     <header class="boardHead">
-      <h2 class="h2" style="margin:0;">創作</h2>
+      <h2 class="h2" style="margin:0;">文学・哲学</h2>
       <p class="small headSub">{board.description}</p>
     </header>
 
@@ -96,13 +96,6 @@ function treePrefix(items: BoardItem[], index: number) {
     padding: 0;
     display: grid;
     gap: 10px;
-  }
-
-  .boardTitle {
-    margin: 0;
-    font-size: 1.02rem;
-    line-height: 1.35;
-    font-weight: 500;
   }
 
   .groupStack { display: grid; gap: 10px; }

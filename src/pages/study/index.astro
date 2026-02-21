@@ -1,6 +1,6 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import board from "../../data/novel-board.json";
+import board from "../../data/study-board.json";
 
 const BASE = import.meta.env.BASE_URL.endsWith("/")
   ? import.meta.env.BASE_URL
@@ -21,6 +21,8 @@ function parseLabel(raw: string) {
 }
 
 type BoardItem = { label: string; href?: string };
+type BoardSection = { title: string; items?: BoardItem[] };
+type BoardGroup = { title: string; items?: BoardItem[]; sections?: BoardSection[] };
 
 function hasNextAtDepth(items: BoardItem[], index: number, depth: number) {
   for (let i = index + 1; i < items.length; i += 1) {
@@ -43,40 +45,71 @@ function treePrefix(items: BoardItem[], index: number) {
   return prefix;
 }
 ---
-<BaseLayout title="創作 | かもねぎ通信">
+<BaseLayout title="研究・翻訳 | かもねぎ通信">
   <section class="boardPage">
     <header class="boardHead">
-      <h2 class="h2" style="margin:0;">創作</h2>
+      <h2 class="h2" style="margin:0;">研究・翻訳</h2>
       <p class="small headSub">{board.description}</p>
     </header>
 
     <div class="hr"></div>
 
     <section class="boardBox" aria-label={board.title}>
+      <h3 class="boardTitle">{board.sectionTitle ?? "翻訳の整理"}</h3>
       <div class="groupStack">
-        {board.groups?.map((group) => (
+        {board.groups?.map((group: BoardGroup) => (
           <section class="groupBlock" aria-label={group.title}>
             <h4 class="groupTitle">{group.title}</h4>
-            <ul class="itemList">
-              {group.items?.map((item, idx, arr) => {
-                const p = parseLabel(item.label);
-                const prefix = treePrefix(arr, idx);
-                return (
-                <li class="itemEntry">
-                  {item.href ? (
-                    <a class="itemLink" href={toHref(item.href)}>
-                      {prefix && <span class="treePrefix">{prefix}</span>}
-                      {p.text}
-                    </a>
-                  ) : (
-                    <span class="itemText">
-                      {prefix && <span class="treePrefix">{prefix}</span>}
-                      {p.text}
-                    </span>
-                  )}
-                </li>
-              )})}
-            </ul>
+            {group.sections?.length ? (
+              <div class="subGroupStack">
+                {group.sections.map((section) => (
+                  <section class="subGroupBlock" aria-label={section.title}>
+                    <h5 class="subGroupTitle">＜{section.title}＞</h5>
+                    <ul class="itemList">
+                      {section.items?.map((item, idx, arr) => {
+                        const p = parseLabel(item.label);
+                        const prefix = treePrefix(arr, idx);
+                        return (
+                        <li class="itemEntry">
+                          {item.href ? (
+                            <a class="itemLink" href={toHref(item.href)}>
+                              {prefix && <span class="treePrefix">{prefix}</span>}
+                              {p.text}
+                            </a>
+                          ) : (
+                            <span class="itemText">
+                              {prefix && <span class="treePrefix">{prefix}</span>}
+                              {p.text}
+                            </span>
+                          )}
+                        </li>
+                      )})}
+                    </ul>
+                  </section>
+                ))}
+              </div>
+            ) : (
+              <ul class="itemList">
+                {group.items?.map((item, idx, arr) => {
+                  const p = parseLabel(item.label);
+                  const prefix = treePrefix(arr, idx);
+                  return (
+                  <li class="itemEntry">
+                    {item.href ? (
+                      <a class="itemLink" href={toHref(item.href)}>
+                        {prefix && <span class="treePrefix">{prefix}</span>}
+                        {p.text}
+                      </a>
+                    ) : (
+                      <span class="itemText">
+                        {prefix && <span class="treePrefix">{prefix}</span>}
+                        {p.text}
+                      </span>
+                    )}
+                  </li>
+                )})}
+              </ul>
+            )}
           </section>
         ))}
       </div>
@@ -108,7 +141,7 @@ function treePrefix(items: BoardItem[], index: number) {
   .groupStack { display: grid; gap: 10px; }
 
   .groupBlock {
-    border: 1px solid rgba(64, 54, 40, 0.2);
+    border: 0;
     border-radius: 0;
     padding: 0;
     display: grid;
@@ -118,9 +151,10 @@ function treePrefix(items: BoardItem[], index: number) {
 
   .groupTitle {
     margin: 0;
-    padding: 8px 10px 1px;
+    padding: 7px 10px;
     font-size: 0.88rem;
     color: #3f5235;
+    background: #f3f0e6;
     line-height: 1.35;
     letter-spacing: 0.02em;
     font-weight: 600;
@@ -128,7 +162,7 @@ function treePrefix(items: BoardItem[], index: number) {
 
   .itemList {
     margin: 0;
-    padding: 3px 10px 10px;
+    padding: 8px 10px 10px;
     list-style: none;
     display: grid;
     gap: 0;
@@ -145,7 +179,7 @@ function treePrefix(items: BoardItem[], index: number) {
     color: var(--ink);
     text-decoration: none;
     overflow-wrap: anywhere;
-    white-space: pre-wrap;
+    white-space: normal;
     tab-size: 2;
   }
 
@@ -156,6 +190,31 @@ function treePrefix(items: BoardItem[], index: number) {
     line-height: 1.28;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     color: rgba(64, 54, 40, 0.56);
+  }
+
+  .subGroupStack {
+    display: grid;
+    gap: 4px;
+    padding-top: 4px;
+  }
+
+  .subGroupBlock {
+    display: grid;
+    gap: 0;
+  }
+
+  .subGroupBlock .itemList {
+    padding-top: 2px;
+  }
+
+  .subGroupTitle {
+    margin: 0;
+    padding: 4px 10px 2px;
+    font-size: 0.82rem;
+    color: #3f5235;
+    line-height: 1.35;
+    letter-spacing: 0.02em;
+    font-weight: 500;
   }
 
   .itemLink:hover { text-decoration: underline; }

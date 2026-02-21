@@ -5,7 +5,7 @@ import { createHash } from "node:crypto";
 import LockGate from "../../components/LockGate.astro";
 
 export async function getStaticPaths() {
-  const items = await getCollection("novel", ({ data }) => !data.draft);
+  const items = await getCollection("research", ({ data }) => !data.draft);
   return items.map((item) => ({ params: { slug: item.slug }, props: { item } }));
 }
 
@@ -14,15 +14,16 @@ const { Content } = await item.render();
 const lockHash = item.data.lockPasscode
   ? createHash("sha256").update(item.data.lockPasscode).digest("hex")
   : "";
-const storageKey = `novel/${item.slug}`;
+const storageKey = `research/${item.slug}`;
 ---
-<BaseLayout title={`${item.data.title} | 創作 | かもねぎ通信`}>
+<BaseLayout title={`${item.data.title} | 研究 | かもねぎ通信`}>
   <article class="plainArticle">
     <div class="articleMeta">
       <span class="small mono">{item.data.date}</span>
       {item.data.tags?.length ? <span class="small tags">#{item.data.tags.join(" #")}</span> : null}
     </div>
     <h1 class="h1">{item.data.title}</h1>
+    {item.data.summary ? <p class="summaryLead">{item.data.summary}</p> : null}
     <LockGate
       locked={item.data.locked}
       lockHash={lockHash}
@@ -59,14 +60,20 @@ const storageKey = `novel/${item.slug}`;
   .plainArticle .h1 {
     font-size: clamp(1.45rem, 2.7vw, 1.82rem);
     line-height: 1.38;
-    margin: 0 0 16px;
+    margin: 0 0 8px;
+  }
+
+  .summaryLead {
+    margin: 0 0 14px;
+    color: var(--muted);
+    opacity: 0.86;
+    font-size: 0.92rem;
+    line-height: 1.6;
   }
 
   .prose :global(p) {
-    margin: 0;
+    margin: 0 0 1.05em;
     font-size: 1rem;
-    line-height: 1.58;
-    white-space: pre-wrap;
   }
 
   .prose :global(h2) {
