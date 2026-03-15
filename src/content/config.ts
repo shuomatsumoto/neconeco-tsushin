@@ -41,9 +41,15 @@ const novel = defineCollection({
   schema: entrySchema,
 });
 
+const genealogy = defineCollection({
+  type: "content",
+  schema: entrySchema,
+});
+
 export const collections = {
   posts: post,
   translation,
   research,
   novel,
+  genealogy,
 };

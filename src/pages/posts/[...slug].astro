@@ -20,6 +20,27 @@ const lockHash = post.data.lockPasscode
   : "";
 const storageKey = `posts/${post.slug}`;
 
+function countCharacters(markdown: string) {
+  const text = markdown
+    .replace(/```[\s\S]*?```/g, " ")
+    .replace(/`[^`]*`/g, " ")
+    .replace(/!\[[^\]]*]\([^)]*\)/g, " ")
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+    .replace(/^>\s?/gm, "")
+    .replace(/[*_~#>-]/g, "")
+    .replace(/\s+/g, "");
+  return text.length;
+}
+
+function formatApproxCharacters(count: number) {
+  const rounded = count >= 1000
+    ? Math.max(100, Math.round(count / 100) * 100)
+    : Math.max(10, Math.round(count / 10) * 10);
+  return `${rounded.toLocaleString("ja-JP")}字`;
+}
+
+const characterCountLabel = formatApproxCharacters(countCharacters(post.body ?? ""));
+
 function thumbSrc(raw?: string) {
   if (!raw) return null;
 
@@ -72,7 +93,7 @@ function thumbSrc(raw?: string) {
             )
           : null}
 
-        <span class="small mono dateText">{post.data.date}</span>
+        <span class="small mono dateText">{post.data.date} / {characterCountLabel}</span>
       </div>
     </div>
 
