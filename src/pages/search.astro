@@ -29,6 +29,7 @@ const postItems = await getCollection("posts", ({ data }) => !data.draft);
 const translationItems = await getCollection("translation", ({ data }) => !data.draft);
 const researchItems = await getCollection("research", ({ data }) => !data.draft);
 const novelItems = await getCollection("novel", ({ data }) => !data.draft);
+const genealogyItems = await getCollection("genealogy", ({ data }) => !data.draft);
 
 const rows: Row[] = [
   ...postItems.map((p) => ({
@@ -70,6 +71,16 @@ const rows: Row[] = [
     meta: "",
     typeLabel: "創作",
     sortKey: `novel:${p.slug}`,
+  })),
+  ...genealogyItems.map((p) => ({
+    href: `${BASE}genealogy/${p.slug}`,
+    title: p.data.title,
+    summary: p.data.summary ?? "",
+    date: p.data.date,
+    tags: safeTags(p.data.tags),
+    meta: [p.data.category ?? "", p.data.series ?? ""].filter(Boolean).join(" "),
+    typeLabel: "系譜学",
+    sortKey: `genealogy:${p.slug}`,
   })),
 ].sort((a, b) => {
   if (a.date !== b.date) return a.date < b.date ? 1 : -1;

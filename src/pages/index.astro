@@ -3,6 +3,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import { getCollection } from "astro:content";
 import Calendar from "../components/Calendar.astro";
 import HomeArticleBlock from "../components/HomeArticleBlock.astro";
+import type { HomeLatestItem } from "../components/HomeArticleBlock.astro";
 import news from "../data/news.json";
 import notices from "../data/notices.json";
 import schedules from "../data/schedules.json";
@@ -18,12 +19,78 @@ const postsAll = await getCollection(
   ({ data }) => !data.draft && !isNoteLike(data)
 );
 const posts = postsAll.sort((a, b) => (a.data.date < b.data.date ? 1 : -1));
+
+const BASE = import.meta.env.BASE_URL.endsWith("/")
+  ? import.meta.env.BASE_URL
+  : import.meta.env.BASE_URL + "/";
+
+const translationItems = await getCollection("translation", ({ data }) => !data.draft);
+const researchItems = await getCollection("research", ({ data }) => !data.draft);
+const novelItems = await getCollection("novel", ({ data }) => !data.draft);
+const genealogyItems = await getCollection("genealogy", ({ data }) => !data.draft);
+
+const latestArticleItems: HomeLatestItem[] = posts
+  .map((p) => ({
+    href: `${BASE}posts/${p.slug}`,
+    title: p.data.title,
+    date: p.data.date,
+    summary: p.data.summary ?? "",
+    label: "記事",
+    isPost: true,
+    thumbnail: p.data.thumbnail,
+  }))
+  .sort((a, b) => {
+    if (a.date !== b.date) return a.date < b.date ? 1 : -1;
+    return a.href < b.href ? 1 : -1;
+  });
+
+const latestBandItems: HomeLatestItem[] = [
+  ...translationItems.map((p) => ({
+    href: `${BASE}study/${p.slug}`,
+    title: p.data.title,
+    date: p.data.date,
+    summary: p.data.summary ?? "",
+    label: "研究／翻訳",
+    isPost: false,
+  })),
+  ...researchItems.map((p) => ({
+    href: `${BASE}study/${p.slug}`,
+    title: p.data.title,
+    date: p.data.date,
+    summary: p.data.summary ?? "",
+    label: "研究／翻訳",
+    isPost: false,
+  })),
+  ...novelItems.map((p) => ({
+    href: `${BASE}novel/${p.slug}`,
+    title: p.data.title,
+    date: p.data.date,
+    summary: p.data.summary ?? "",
+    label: "創作",
+    isPost: false,
+  })),
+  ...genealogyItems.map((p) => ({
+    href: `${BASE}genealogy/${p.slug}`,
+    title: p.data.title,
+    date: p.data.date,
+    summary: p.data.summary ?? "",
+    label: "系譜学",
+    isPost: false,
+  })),
+].sort((a, b) => {
+  if (a.date !== b.date) return a.date < b.date ? 1 : -1;
+  return a.href < b.href ? 1 : -1;
+});
 ---
 <BaseLayout title="かもねぎ通信">
   <div class="homeGrid">
     <main class="homeCol">
       <section class="homeSection">
-        <HomeArticleBlock posts={posts} limit={10} />
+        <HomeArticleBlock items={latestArticleItems} title="最新の記事" limit={3} />
+      </section>
+
+      <section class="homeSection">
+        <HomeArticleBlock items={latestBandItems} limit={3} showTitle={false} showFeatured={false} />
       </section>
 
       <section class="homeSection">

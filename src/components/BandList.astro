@@ -1,0 +1,132 @@
+---
+export type BandItem = {
+  href: string;
+  title: string;
+  date: string;
+  summary?: string;
+  label?: string;
+};
+
+const {
+  items,
+  title = "",
+  emptyText = "まだ投稿がありません。",
+  showLabel = false,
+} = Astro.props as {
+  items: BandItem[];
+  title?: string;
+  emptyText?: string;
+  showLabel?: boolean;
+};
+---
+<section class="bandSection">
+  {title ? (
+    <header class="bandHead">
+      <h2 class="h2" style="margin:0;">{title}</h2>
+    </header>
+  ) : null}
+
+  <ul class="bandList">
+    {items.map((item) => {
+      const line = item.summary ? `${item.title} - ${item.summary}` : item.title;
+      return (
+        <li class="bandItem">
+          <a class={`bandRow${showLabel ? " withLabel" : ""}`} href={item.href}>
+            {showLabel && item.label ? <span class="bandLabel">{item.label}</span> : null}
+            <span class="bandLine">{line}</span>
+            <span class="bandDate mono">{item.date}</span>
+          </a>
+        </li>
+      );
+    })}
+  </ul>
+
+  {!items.length ? <p class="emptyText">{emptyText}</p> : null}
+</section>
+
+<style>
+  .bandSection {
+    display: grid;
+    gap: 10px;
+  }
+
+  .bandList {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-top: 1px dotted var(--line);
+  }
+
+  .bandItem {
+    border-bottom: 1px dotted var(--line);
+  }
+
+  .bandRow {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 88px;
+    align-items: baseline;
+    gap: 10px;
+    padding: 9px 0;
+    text-decoration: none;
+    color: var(--ink);
+  }
+
+  .bandRow.withLabel {
+    grid-template-columns: auto minmax(0, 1fr) 88px;
+  }
+
+  .bandRow:hover {
+    opacity: 0.84;
+  }
+
+  .bandDate {
+    font-size: 0.72rem;
+    color: var(--muted);
+    opacity: 0.8;
+    white-space: nowrap;
+    text-align: right;
+  }
+
+  .bandLine {
+    font-size: 0.9rem;
+    line-height: 1.35;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .bandLabel {
+    font-size: 0.74rem;
+    color: var(--muted);
+    opacity: 0.8;
+    white-space: nowrap;
+  }
+
+  .emptyText {
+    margin: 4px 0 0;
+    font-size: 0.84rem;
+    color: var(--muted);
+  }
+
+  @media (max-width: 700px) {
+    .bandRow {
+      grid-template-columns: 1fr;
+      gap: 2px;
+      padding: 8px 0;
+    }
+
+    .bandDate {
+      text-align: left;
+    }
+
+    .bandLabel {
+      justify-self: start;
+    }
+
+    .bandLine {
+      white-space: normal;
+      overflow: visible;
+      text-overflow: clip;
+    }
+  }
+</style>
