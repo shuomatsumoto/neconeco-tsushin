@@ -1,5 +1,6 @@
 ---
 import type { CollectionEntry } from "astro:content";
+import { getContentSummary } from "../utils/content";
 
 const { posts, limit, title = "記事" } = Astro.props as {
   posts: CollectionEntry<"posts">[];
@@ -30,7 +31,7 @@ function thumbSrc(raw?: string) {
 
   <ul class="postList">
     {shown.map((p) => {
-      const summary = p.data.summary ?? "";
+      const summary = getContentSummary(p.data.summary, p.body ?? "");
       const t = thumbSrc((p.data as any).thumbnail as string | undefined);
       const tags = p.data.tags ?? [];
 

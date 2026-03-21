@@ -9,12 +9,11 @@ const BASE = import.meta.env.BASE_URL.endsWith("/")
       <a href={BASE} class="siteTitleLink">
         <img
           id="siteTitleIcon"
-          src={`${BASE}images/deco/negi3.jpg`}
+          src={`${BASE}images/deco/neco.jpg`}
           alt=""
           class="siteTitleIcon"
-          data-base={BASE}
         />
-        <span>かもねぎ通信</span>
+        <span>ねこねこ通信</span>
       </a>
     </h1>
 
@@ -34,8 +33,6 @@ const BASE = import.meta.env.BASE_URL.endsWith("/")
       </button>
     </div>
   </div>
-
-  <div class="small headerSub">個人しんぶん・研究ノート・せいかつ誌</div>
 
   <form
     id="headSearch"
@@ -60,8 +57,9 @@ const BASE = import.meta.env.BASE_URL.endsWith("/")
       color: var(--ink);
       text-decoration: none;
       letter-spacing: 0.03em;
-      display: inline-block;
-      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
       line-height: 1.2;
     }
 
@@ -74,16 +72,12 @@ const BASE = import.meta.env.BASE_URL.endsWith("/")
     }
 
     .siteTitleIcon {
-      position: absolute;
-      left: -44px;
-      top: 50%;
-      transform: translateY(-50%);
-      height: 50px;
-      width: auto;
-      max-width: 50px;
+      height: 44px;
+      width: 44px;
       display: block;
       object-fit: contain;
       object-position: center;
+      flex: 0 0 auto;
     }
 
     .headerControls {
@@ -174,12 +168,6 @@ const BASE = import.meta.env.BASE_URL.endsWith("/")
       transform: rotate(18deg);
     }
 
-    .headerSub {
-      margin-top: 5px;
-      letter-spacing: 0.08em;
-      text-align: center;
-    }
-
     @media (max-width: 700px) {
       .headerTop {
         grid-template-columns: 1fr;
@@ -213,18 +201,10 @@ const BASE = import.meta.env.BASE_URL.endsWith("/")
 
       onReady(function () {
         var header = document.querySelector(".siteHeader");
-        var titleIcon = document.getElementById("siteTitleIcon");
         var btn = document.getElementById("searchFab");
         var form = document.getElementById("headSearch");
         var input = document.getElementById("headSearchInput");
         if (!btn || !form || !input || !header) return;
-
-        if (titleIcon) {
-          var base = titleIcon.getAttribute("data-base") || "/";
-          var choices = ["negi1.jpg", "negi2.jpg", "negi3.jpg"];
-          var pick = choices[Math.floor(Math.random() * choices.length)];
-          titleIcon.setAttribute("src", base + "images/deco/" + pick);
-        }
 
         function syncPanelTop() {
           var rect = header.getBoundingClientRect();

@@ -26,7 +26,7 @@ const posts = await getCollection("posts", ({ data }) =>
 posts.sort((a, b) => (a.data.date < b.data.date ? 1 : -1));
 ---
 
-<BaseLayout title={`${series} | かもねぎ通信`}>
+<BaseLayout title={`${series} | ねこねこ通信`}>
   <div style="display:flex; align-items:baseline; justify-content:space-between; gap:12px;">
     <h2 class="h2" style="margin:0;">{series}</h2>
     <a class="small mono" href={`${BASE}series`} style="text-decoration:none;">連載一覧</a>

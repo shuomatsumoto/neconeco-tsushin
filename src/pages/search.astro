@@ -1,6 +1,7 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { getCollection } from "astro:content";
+import { getContentSummary } from "../utils/content";
 
 const BASE = import.meta.env.BASE_URL.endsWith("/")
   ? import.meta.env.BASE_URL
@@ -35,7 +36,7 @@ const rows: Row[] = [
   ...postItems.map((p) => ({
     href: `${BASE}posts/${p.slug}`,
     title: p.data.title,
-    summary: p.data.summary ?? "",
+    summary: getContentSummary(p.data.summary, p.body ?? ""),
     date: p.data.date,
     tags: safeTags(p.data.tags),
     meta: [p.data.category ?? "", p.data.series ?? ""].filter(Boolean).join(" "),
@@ -87,7 +88,7 @@ const rows: Row[] = [
   return a.sortKey < b.sortKey ? 1 : -1;
 });
 ---
-<BaseLayout title="検索 | かもねぎ通信">
+<BaseLayout title="検索 | ねこねこ通信">
   <section class="searchPage">
     <header class="searchHead">
       <h2 class="h2" style="margin:0;">検索</h2>

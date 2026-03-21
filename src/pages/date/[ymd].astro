@@ -52,7 +52,7 @@ const newsItems = news.filter((n) => (n.date ?? "").trim() === ymd);
 const mmdd = ymd.slice(5, 10);
 const memorialItems = memorials.filter((m) => m.date === ymd || m.date === mmdd);
 ---
-<BaseLayout title={`${ymd} | かもねぎ通信`}>
+<BaseLayout title={`${ymd} | ねこねこ通信`}>
   <section class="plainSection">
     <div class="sectionHead">
       <h2 class="h2" style="margin:0;">{ymd}</h2>

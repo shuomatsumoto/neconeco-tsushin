@@ -27,7 +27,7 @@ const postsAll = await getCollection(
 
 const posts = postsAll.sort((a, b) => (a.data.date < b.data.date ? 1 : -1));
 ---
-<BaseLayout title={`${category} | かもねぎ通信`}>
+<BaseLayout title={`${category} | ねこねこ通信`}>
   <div style="display:flex; align-items:baseline; justify-content:space-between; gap:12px;">
     <h2 class="h2" style="margin:0;">{category}</h2>
     <a class="small" href={`${BASE}category`} style="text-decoration:none; color:var(--muted);">カテゴリ一覧</a>

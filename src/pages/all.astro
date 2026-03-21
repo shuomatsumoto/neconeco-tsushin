@@ -1,6 +1,7 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { getCollection } from "astro:content";
+import { getContentSummary } from "../utils/content";
 
 const BASE = import.meta.env.BASE_URL.endsWith("/")
   ? import.meta.env.BASE_URL
@@ -43,7 +44,7 @@ function thumbSrc(raw?: string) {
 const data = posts.map((p) => ({
   slug: p.slug,
   title: p.data.title,
-  summary: p.data.summary ?? "",
+  summary: getContentSummary(p.data.summary, p.body ?? ""),
   date: p.data.date,
   series: p.data.series ?? "",
   category: (p.data.category ?? "").trim(),
@@ -51,7 +52,7 @@ const data = posts.map((p) => ({
   tags: safeTags(p.data.tags),
 }));
 ---
-<BaseLayout title="記事一覧 | かもねぎ通信">
+<BaseLayout title="記事一覧 | ねこねこ通信">
   <section class="catalog">
     <header class="catalogHead">
       <h2 class="h2" style="margin:0;">記事一覧</h2>

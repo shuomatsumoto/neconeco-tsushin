@@ -31,7 +31,7 @@ const posts = await getCollection("posts", ({ data }) =>
 posts.sort((a, b) => (a.data.date < b.data.date ? 1 : -1));
 ---
 
-<BaseLayout title={`#${tag} | かもねぎ通信`}>
+<BaseLayout title={`#${tag} | ねこねこ通信`}>
   <div style="display:flex; align-items:baseline; justify-content:space-between; gap:12px;">
     <h2 class="h2" style="margin:0;">#{tag}</h2>
     <a class="small mono" href={`${BASE}tags`} style="text-decoration:none;">タグ一覧</a>

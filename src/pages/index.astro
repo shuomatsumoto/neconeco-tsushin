@@ -4,6 +4,7 @@ import { getCollection } from "astro:content";
 import Calendar from "../components/Calendar.astro";
 import HomeArticleBlock from "../components/HomeArticleBlock.astro";
 import type { HomeLatestItem } from "../components/HomeArticleBlock.astro";
+import { getContentSummary } from "../utils/content";
 import news from "../data/news.json";
 import notices from "../data/notices.json";
 import schedules from "../data/schedules.json";
@@ -34,7 +35,7 @@ const latestArticleItems: HomeLatestItem[] = posts
     href: `${BASE}posts/${p.slug}`,
     title: p.data.title,
     date: p.data.date,
-    summary: p.data.summary ?? "",
+    summary: getContentSummary(p.data.summary, p.body ?? ""),
     label: "記事",
     isPost: true,
     thumbnail: p.data.thumbnail,
@@ -82,7 +83,7 @@ const latestBandItems: HomeLatestItem[] = [
   return a.href < b.href ? 1 : -1;
 });
 ---
-<BaseLayout title="かもねぎ通信">
+<BaseLayout title="ねこねこ通信">
   <div class="homeGrid">
     <main class="homeCol">
       <section class="homeSection">
