@@ -32,7 +32,7 @@ function softBreaksAsBr() {
 
 export default defineConfig({
   site: "https://shuomatsumoto.github.io",
-  base: isProd ? "/kamonegi-tsushin" : "/",
+  base: isProd ? "/neconeco-tsushin" : "/",
   markdown: {
     remarkPlugins: [softBreaksAsBr],
   },
