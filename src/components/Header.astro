@@ -2,45 +2,67 @@
 const BASE = import.meta.env.BASE_URL.endsWith("/")
   ? import.meta.env.BASE_URL
   : import.meta.env.BASE_URL + "/";
+const currentPath = Astro.url.pathname;
+const studyRoot = `${BASE}study`;
+const isLab =
+  currentPath.startsWith(studyRoot) ||
+  currentPath.startsWith(`${BASE}translation`) ||
+  currentPath.startsWith(`${BASE}research`) ||
+  currentPath.startsWith(`${BASE}novel`) ||
+  currentPath.startsWith(`${BASE}genealogy`);
+const titleIconSrc = `${BASE}images/deco/${isLab ? "neco2.png" : "neco.png"}`;
+const searchAction = `${BASE}${isLab ? "study/search" : "search"}`;
+const searchLabel = isLab ? "研究所内の検索" : "記事と日記の検索";
+const searchPlaceholder = isLab ? "研究所を検索" : "記事や日記を検索";
 ---
 <header class="siteHeader">
   <div class="headerTop">
+    <div class="headerLeft">
+      <div class="headerControls">
+        <button id="sunFab" class="sunFab" type="button" aria-label="menu" aria-expanded="false">
+          ☀️
+        </button>
+
+        <button
+          id="searchFab"
+          class="searchFab"
+          type="button"
+          aria-label="search"
+          aria-expanded="false"
+        >
+          🔍
+        </button>
+
+        <a
+          href={isLab ? BASE : studyRoot}
+          class="labLink"
+          aria-label={isLab ? "ねこねこ通信へ" : "ねこねこ研究所へ"}
+        >
+          {isLab ? "✉️" : "🧪"}
+        </a>
+      </div>
+    </div>
+
     <h1 class="siteTitle" style="margin:0;">
-      <a href={BASE} class="siteTitleLink">
+      <a href={isLab ? studyRoot : BASE} class={`siteTitleLink${isLab ? " isLab" : ""}`}>
         <img
           id="siteTitleIcon"
-          src={`${BASE}images/deco/neco.png`}
+          src={titleIconSrc}
           alt=""
           class="siteTitleIcon"
         />
-        <span>ねこねこ通信</span>
+        <span>{isLab ? "ねこねこ研究所" : "ねこねこ通信"}</span>
       </a>
     </h1>
-
-    <div class="headerControls">
-      <button id="sunFab" class="sunFab" type="button" aria-label="menu" aria-expanded="false">
-        ☀️
-      </button>
-
-      <button
-        id="searchFab"
-        class="searchFab"
-        type="button"
-        aria-label="search"
-        aria-expanded="false"
-      >
-        🔍
-      </button>
-    </div>
   </div>
 
   <form
     id="headSearch"
     class="headSearchPanel"
-    action={`${BASE}search`}
+    action={searchAction}
     method="get"
     role="search"
-    aria-label="記事の検索"
+    aria-label={searchLabel}
     data-open="false"
   >
     <input
@@ -48,7 +70,7 @@ const BASE = import.meta.env.BASE_URL.endsWith("/")
       class="headSearchInput"
       type="search"
       name="q"
-      placeholder="記事を検索"
+      placeholder={searchPlaceholder}
     />
   </form>
 
@@ -57,9 +79,8 @@ const BASE = import.meta.env.BASE_URL.endsWith("/")
       color: var(--ink);
       text-decoration: none;
       letter-spacing: 0.03em;
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
+      display: inline-block;
+      position: relative;
       line-height: 1.2;
     }
 
@@ -67,25 +88,49 @@ const BASE = import.meta.env.BASE_URL.endsWith("/")
       font-size: 1.34rem;
       font-weight: 500;
       line-height: 1.2;
+      margin: 0;
       grid-column: 2;
       justify-self: center;
     }
 
     .siteTitleIcon {
+      position: absolute;
+      right: calc(100% + 10px);
+      top: 50%;
+      transform: translateY(-50%);
       height: 44px;
       width: 44px;
       display: block;
       object-fit: contain;
       object-position: center;
-      flex: 0 0 auto;
+    }
+
+    .labLink {
+      width: 24px;
+      height: 24px;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      font-size: 16px;
+      padding: 0;
+      line-height: 1;
+      text-decoration: none;
     }
 
     .headerControls {
       display: flex;
+      flex-direction: row;
       align-items: center;
       gap: 8px;
-      grid-column: 3;
-      justify-self: end;
+      flex-shrink: 0;
+    }
+
+    .headerLeft {
+      grid-column: 1;
+      justify-self: start;
+      display: flex;
+      align-items: flex-start;
+      min-width: 0;
     }
 
     .headerTop {
@@ -136,29 +181,27 @@ const BASE = import.meta.env.BASE_URL.endsWith("/")
     }
 
     .searchFab {
-      width: 30px;
-      height: 30px;
-      border-radius: 16px;
-      border: 1px solid var(--line);
-      background: #fffdf8;
+      width: 24px;
+      height: 24px;
+      border: 0;
+      background: transparent;
       cursor: pointer;
       display: grid;
       place-items: center;
-      font-size: 14px;
+      font-size: 16px;
       padding: 0;
       line-height: 1;
     }
 
     .sunFab {
-      width: 30px;
-      height: 30px;
-      border-radius: 16px;
-      border: 1px solid var(--line);
-      background: #fffdf8;
+      width: 24px;
+      height: 24px;
+      border: 0;
+      background: transparent;
       cursor: pointer;
       display: grid;
       place-items: center;
-      font-size: 14px;
+      font-size: 16px;
       padding: 0;
       line-height: 1;
       transition: transform 0.18s ease;
@@ -171,16 +214,38 @@ const BASE = import.meta.env.BASE_URL.endsWith("/")
     @media (max-width: 700px) {
       .headerTop {
         grid-template-columns: 1fr;
+        justify-items: stretch;
+        gap: 10px;
+      }
+
+      .headerLeft {
+        grid-column: 1;
+        justify-self: start;
       }
 
       .siteTitle {
         grid-column: 1;
+        justify-self: center;
+        width: 100%;
+        text-align: center;
+      }
+
+      .siteTitleLink {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding-left: 0;
+      }
+
+      .siteTitleIcon {
+        position: static;
+        transform: none;
+        width: 32px;
+        height: 32px;
       }
 
       .headerControls {
-        grid-column: 1;
-        width: 100%;
-        justify-content: flex-end;
+        justify-content: flex-start;
       }
 
       .headSearchPanel {

@@ -9,9 +9,16 @@ const BASE = import.meta.env.BASE_URL.endsWith("/")
 
 const translationItems = await getCollection("translation", ({ data }) => !data.draft);
 const researchItems = await getCollection("research", ({ data }) => !data.draft);
+const novelItems = await getCollection("novel", ({ data }) => !data.draft);
+const genealogyItems = await getCollection("genealogy", ({ data }) => !data.draft);
 
 const seen = new Set<string>();
-const merged = [...translationItems, ...researchItems].filter((item) => {
+const merged = [
+  ...translationItems,
+  ...researchItems,
+  ...novelItems,
+  ...genealogyItems,
+].filter((item) => {
   const key = `${item.collection}:${item.slug}`;
   if (seen.has(key)) return false;
   seen.add(key);
@@ -20,19 +27,34 @@ const merged = [...translationItems, ...researchItems].filter((item) => {
 
 const items: BandItem[] = merged
   .map((item) => ({
-    href: `${BASE}study/${item.slug}`,
+    href:
+      item.collection === "translation" || item.collection === "research"
+        ? `${BASE}study/${item.slug}`
+        : `${BASE}${item.collection}/${item.slug}`,
     title: item.data.title,
     date: item.data.date,
     summary: item.data.summary ?? "",
+    label:
+      item.collection === "translation"
+        ? "翻訳"
+        : item.collection === "research"
+          ? "研究"
+          : item.collection === "novel"
+            ? "小説"
+            : "系譜",
   }))
   .sort((a, b) => {
     if (a.date !== b.date) return a.date < b.date ? 1 : -1;
     return a.href < b.href ? 1 : -1;
   });
 ---
-<BaseLayout title="研究・翻訳 | ねこねこ通信">
+<BaseLayout title="ねこねこ研究所 | ねこねこ通信">
   <section class="pageWrap">
-    <BandList items={items} title="研究・翻訳" emptyText="研究・翻訳の投稿はまだありません。" />
+    <header class="pageHead">
+      <h2 class="h2" style="margin:0;">ねこねこ研究所</h2>
+      <p class="pageLead">翻訳、研究、小説、系譜ノートをまとめて置く場所です。</p>
+    </header>
+    <BandList items={items} showLabel={true} emptyText="研究所の投稿はまだありません。" />
   </section>
 </BaseLayout>
 
@@ -40,5 +62,19 @@ const items: BandItem[] = merged
   .pageWrap {
     width: min(100%, 940px);
     margin-inline: auto;
+    display: grid;
+    gap: 12px;
+  }
+
+  .pageHead {
+    display: grid;
+    gap: 4px;
+  }
+
+  .pageLead {
+    margin: 0;
+    color: var(--muted);
+    opacity: 0.84;
+    font-size: 0.9rem;
   }
 </style>

@@ -1,13 +1,8 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { getCollection } from "astro:content";
-import Calendar from "../components/Calendar.astro";
-import HomeArticleBlock from "../components/HomeArticleBlock.astro";
-import type { HomeLatestItem } from "../components/HomeArticleBlock.astro";
 import { getContentSummary } from "../utils/content";
 import board from "../data/board.json";
-import memorials from "../data/memorials.json";
-import NoticeList from "../components/NoticeList.astro";
 
 function isNoteLike(data: { kind?: string }) {
   return data.kind === "note";
@@ -22,65 +17,274 @@ const posts = postsAll.sort((a, b) => (a.data.date < b.data.date ? 1 : -1));
 const BASE = import.meta.env.BASE_URL.endsWith("/")
   ? import.meta.env.BASE_URL
   : import.meta.env.BASE_URL + "/";
+const latestPost = posts[0];
+const todayYmd = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "Asia/Tokyo",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+}).format(new Date());
+const todayMonth = todayYmd.slice(0, 7);
+const latestPostMonth = latestPost?.data.date.slice(0, 7) ?? "";
+const latestBoardMonth = board
+  .filter((item) => isYmd(item.date))
+  .map((item) => item.date!.slice(0, 7))
+  .sort((a, b) => (a < b ? 1 : -1))[0] ?? "";
+const latestMonth = [todayMonth, latestPostMonth, latestBoardMonth]
+  .filter(Boolean)
+  .sort((a, b) => (a < b ? 1 : -1))[0] ?? "";
 
-const latestArticleItems: HomeLatestItem[] = posts
-  .map((p) => ({
-    href: `${BASE}posts/${p.slug}`,
-    title: p.data.title,
-    date: p.data.date,
-    summary: getContentSummary(p.data.summary, p.body ?? ""),
-    isPost: true,
-    thumbnail: p.data.thumbnail,
-    category: p.data.category,
-    series: p.data.series,
-  }))
-  .sort((a, b) => {
-    if (a.date !== b.date) return a.date < b.date ? 1 : -1;
-    return a.href < b.href ? 1 : -1;
-  });
+function thumbSrc(raw?: string) {
+  if (!raw) return null;
+  if (raw.startsWith("http://") || raw.startsWith("https://")) return raw;
+  if (raw.startsWith("/")) return `${BASE}${raw.slice(1)}`;
+  return `${BASE}${raw.replace(/^\/+/, "")}`;
+}
 
 function isYmd(value: string | undefined) {
   return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
 }
 
-const boardItems = [...board].sort((a, b) => {
-  const aDate = a.date ?? "";
-  const bDate = b.date ?? "";
-  const aIsYmd = isYmd(aDate);
-  const bIsYmd = isYmd(bDate);
+function formatShortDate(value: string) {
+  const [, month, day] = value.split("-");
+  return `${Number(month)}/${Number(day)}`;
+}
 
-  if (aIsYmd && bIsYmd) return aDate < bDate ? 1 : -1;
-  if (aIsYmd) return -1;
-  if (bIsYmd) return 1;
-  return aDate.localeCompare(bDate, "ja");
-});
+function toDayNumber(value: string) {
+  return Math.floor(Date.parse(`${value}T00:00:00+09:00`) / 86400000);
+}
+
+function shiftMonth(value: string, delta: number) {
+  const base = new Date(`${value}-01T00:00:00+09:00`);
+  base.setMonth(base.getMonth() + delta);
+  const year = base.getFullYear();
+  const month = String(base.getMonth() + 1).padStart(2, "0");
+  return `${year}-${month}`;
+}
+
+function formatMonthLabel(value: string) {
+  const [, month] = value.split("-");
+  return `${Number(month)}月分を表示`;
+}
+
+type TimelineItem =
+  | {
+      kind: "post";
+      date: string;
+      href: string;
+      title: string;
+      summary: string;
+      thumbnail?: string;
+      category?: string;
+      series?: string;
+      tags: string[];
+    }
+  | {
+      kind: "board";
+      date: string;
+      comment: string;
+      href?: string;
+    }
+  | {
+      kind: "todayMarker";
+      date: string;
+    };
+
+function buildTimeline(month: string) {
+  const monthPosts = month
+    ? posts.filter((post) => post.data.date.startsWith(month))
+    : [];
+  const monthBoardItems = month
+    ? board.filter((item) => isYmd(item.date) && item.date?.startsWith(month))
+    : [];
+
+  const timelineItems: TimelineItem[] = [
+    ...monthPosts.map((post) => ({
+      kind: "post" as const,
+      date: post.data.date,
+      href: `${BASE}posts/${post.slug}`,
+      title: post.data.title,
+      summary: getContentSummary(post.data.summary, post.body ?? ""),
+      thumbnail: post.data.thumbnail,
+      category: post.data.category,
+      series: post.data.series,
+      tags: post.data.tags ?? [],
+    })),
+    ...monthBoardItems.map((item) => ({
+      kind: "board" as const,
+      date: item.date ?? "",
+      comment: item.comment ?? item.title ?? "",
+      href: item.href,
+    })),
+  ];
+
+  if (month === todayMonth && !timelineItems.some((item) => item.date === todayYmd)) {
+    timelineItems.push({
+      kind: "todayMarker" as const,
+      date: todayYmd,
+    });
+  }
+
+  return timelineItems.sort((a, b) => {
+    if (a.date !== b.date) return a.date < b.date ? 1 : -1;
+    if (a.kind === b.kind) return 0;
+    if (a.kind === "todayMarker") return -1;
+    if (b.kind === "todayMarker") return 1;
+    return a.kind === "board" ? -1 : 1;
+  }).map((item, index, items) => {
+    if (index === 0) return { item, gapDots: 0, showBead: true };
+
+    const previousItem = items[index - 1];
+    const diff = Math.max(toDayNumber(previousItem.date) - toDayNumber(item.date), 0);
+
+    return { item, gapDots: diff, showBead: previousItem.date !== item.date };
+  });
+}
+
+const timelineWithGap = buildTimeline(latestMonth);
+const featuredPostHref = timelineWithGap.find((entry) => entry.item.kind === "post")?.item.href ?? "";
+const previousMonth = latestMonth ? shiftMonth(latestMonth, -1) : "";
+const previousTimelineWithGap = previousMonth ? buildTimeline(previousMonth) : [];
+const previousMonthLabel = previousMonth ? formatMonthLabel(previousMonth) : "";
+const crossMonthDots =
+  timelineWithGap.length && previousTimelineWithGap.length
+    ? Math.max(
+        toDayNumber(timelineWithGap[timelineWithGap.length - 1].item.date) -
+          toDayNumber(previousTimelineWithGap[0].item.date),
+        0
+      )
+    : 0;
 ---
 <BaseLayout title="ねこねこ通信">
   <div class="homeGrid">
     <main class="homeCol">
       <section class="homeSection">
-        <HomeArticleBlock items={latestArticleItems} limit={6} loadMoreStep={6} showTitle={false} />
+        {timelineWithGap.length ? (
+          <ul class="postGrid">
+            {timelineWithGap.map(({ item, gapDots, showBead }) => {
+              const isFeatured = item.kind === "post" && item.href === featuredPostHref;
+
+              return (
+              <li class={`cardItem${isFeatured ? " featuredCardItem" : ""}`} style={`--dot-count:${gapDots};`}>
+                {gapDots > 0 ? (
+                  <span class="dotTrail" aria-hidden="true">
+                    {Array.from({ length: gapDots }).map(() => (
+                      <span class="trailDot"></span>
+                    ))}
+                  </span>
+                ) : null}
+                {showBead ? (
+                  <span class="timeBead mono">
+                    {formatShortDate(item.date)}
+                  </span>
+                ) : null}
+                {item.kind === "post" ? (
+                  <a
+                    class={`postCard${isFeatured ? " featuredPost" : ""}`}
+                    href={item.href}
+                  >
+                    {item.thumbnail ? (
+                      <img class="thumb post-thumb-wide" src={thumbSrc(item.thumbnail)} alt="" loading="lazy" />
+                    ) : null}
+                    <div class="cardBody">
+                      <strong class="title post-title-2line">{item.title}</strong>
+                      <p class="summary post-summary-2line">{item.summary}</p>
+                      <div class="metaStack">
+                        <p class="metaInfo">
+                          {item.series ? <span class="seriesLine post-series-accent">〈{item.series}〉</span> : null}
+                          {item.category ? <span class="category">{item.category}</span> : null}
+                        </p>
+                      </div>
+                    </div>
+                  </a>
+                ) : item.kind === "board" ? (
+                  <div class="boardCard">
+                    {item.href ? (
+                      <a class="boardComment" href={item.href}>{item.comment}</a>
+                    ) : (
+                      <p class="boardComment">{item.comment}</p>
+                    )}
+                  </div>
+                ) : (
+                  <div class="todayMarkerCard" aria-label="今日">
+                    <p class="todayMarkerText">今日はまだ記事がありません。</p>
+                  </div>
+                )}
+              </li>
+            )})}
+          </ul>
+        ) : null}
+        {previousTimelineWithGap.length ? (
+          <details class="olderMonths">
+            <summary class="olderMonthsButton">{previousMonthLabel}</summary>
+            {crossMonthDots > 0 ? (
+              <div class="monthBridge" style={`--dot-count:${crossMonthDots};`} aria-hidden="true">
+                <span class="dotTrail">
+                  {Array.from({ length: crossMonthDots }).map(() => (
+                    <span class="trailDot"></span>
+                  ))}
+                </span>
+              </div>
+            ) : null}
+            <ul class="postGrid olderMonthsList">
+              {previousTimelineWithGap.map(({ item, gapDots, showBead }) => (
+                <li class="cardItem" style={`--dot-count:${gapDots};`}>
+                  {gapDots > 0 ? (
+                    <span class="dotTrail" aria-hidden="true">
+                      {Array.from({ length: gapDots }).map(() => (
+                        <span class="trailDot"></span>
+                      ))}
+                    </span>
+                  ) : null}
+                  {showBead ? (
+                    <span class="timeBead mono">
+                      {formatShortDate(item.date)}
+                    </span>
+                  ) : null}
+                  {item.kind === "post" ? (
+                    <a class="postCard" href={item.href}>
+                      {item.thumbnail ? (
+                        <img class="thumb post-thumb-wide" src={thumbSrc(item.thumbnail)} alt="" loading="lazy" />
+                      ) : null}
+                      <div class="cardBody">
+                        <strong class="title post-title-2line">{item.title}</strong>
+                        <p class="summary post-summary-2line">{item.summary}</p>
+                        <div class="metaStack">
+                          <p class="metaInfo">
+                            {item.series ? <span class="seriesLine post-series-accent">〈{item.series}〉</span> : null}
+                            {item.category ? <span class="category">{item.category}</span> : null}
+                          </p>
+                        </div>
+                      </div>
+                    </a>
+                  ) : item.kind === "board" ? (
+                    <div class="boardCard">
+                      {item.href ? (
+                        <a class="boardComment" href={item.href}>{item.comment}</a>
+                      ) : (
+                        <p class="boardComment">{item.comment}</p>
+                      )}
+                    </div>
+                  ) : (
+                    <div class="todayMarkerCard" aria-label="今日">
+                      <p class="todayMarkerText">今日はまだ記事がありません。</p>
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </details>
+        ) : null}
       </section>
     </main>
-
-    <aside class="homeCol homeAside">
-      <section class="homeSection">
-        <NoticeList notices={boardItems} title="ボード" limit={16} />
-      </section>
-
-      <section class="homeSection">
-        <Calendar posts={posts} memorials={memorials} />
-      </section>
-    </aside>
   </div>
 
   <style>
     .homeGrid {
+      width: min(100%, 940px);
+      margin-inline: auto;
       display: grid;
-      grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.75fr);
-      gap: 26px;
-      align-items: start;
-      justify-content: center;
+      gap: 16px;
     }
 
     .homeCol {
@@ -95,12 +299,333 @@ const boardItems = [...board].sort((a, b) => {
       margin: 0;
     }
 
+    .postGrid {
+      --timeline-side-space: 34px;
+      list-style: none;
+      padding: 0;
+      padding-right: var(--timeline-side-space);
+      margin: 0;
+      display: grid;
+      gap: 0;
+    }
+
+    .olderMonths {
+      margin-top: 18px;
+    }
+
+    .olderMonthsButton {
+      cursor: pointer;
+      font-size: 0.78rem;
+      color: var(--muted);
+      opacity: 0.62;
+      list-style: none;
+      user-select: none;
+    }
+
+    .olderMonthsButton::-webkit-details-marker {
+      display: none;
+    }
+
+    .olderMonths[open] .olderMonthsButton {
+      display: none;
+    }
+
+    .monthBridge {
+      --dot-count: 0;
+      --dot-step: 8px;
+      --gap-space: calc(var(--dot-count) * var(--dot-step));
+      --rail-x: 14px;
+      position: relative;
+      min-width: 0;
+      height: var(--gap-space);
+      padding-left: 34px;
+      padding-right: 34px;
+    }
+
+    .monthBridge .dotTrail {
+      left: var(--rail-x);
+      height: var(--gap-space);
+    }
+
+    .olderMonthsList {
+      margin-top: 0;
+    }
+
+    .cardItem {
+      --dot-count: 0;
+      --dot-step: 8px;
+      --gap-space: calc(var(--dot-count) * var(--dot-step));
+      --rail-x: 14px;
+      position: relative;
+      min-width: 0;
+      padding-top: var(--gap-space);
+      padding-left: 34px;
+    }
+
+    .featuredCardItem {
+      margin-top: 2px;
+      padding-bottom: 8px;
+    }
+
+    .dotTrail {
+      position: absolute;
+      left: var(--rail-x);
+      top: 0;
+      width: 3px;
+      height: var(--gap-space);
+      display: grid;
+      grid-auto-rows: 2px;
+      align-content: start;
+      justify-items: center;
+      gap: calc(var(--dot-step) - 2px);
+      opacity: 0.72;
+    }
+
+    .trailDot {
+      width: 3px;
+      height: 2px;
+      border-radius: 999px;
+      background: rgba(122, 113, 98, 0.42);
+    }
+
+    .timeBead {
+      position: absolute;
+      left: calc(var(--rail-x) - 14px);
+      top: calc(var(--gap-space) + 4px);
+      z-index: 1;
+      min-width: 40px;
+      height: 24px;
+      padding: 0 7px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.68rem;
+      line-height: 1;
+      color: #5f564b;
+      background: #eee8de;
+      box-shadow: 0 0 0 1px rgba(98, 86, 67, 0.08);
+      white-space: nowrap;
+    }
+
+    .postCard {
+      display: grid;
+      grid-template-columns: 224px minmax(0, 1fr);
+      gap: 16px;
+      text-decoration: none;
+      color: var(--ink);
+      padding: 9px 11px 10px;
+      transition: opacity 0.16s ease;
+    }
+
+    .featuredPost {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 14px;
+      padding: 8px 0 10px;
+      width: 100%;
+      max-width: none;
+    }
+
+    .postCard:hover {
+      opacity: 0.82;
+    }
+
+    .thumb {
+      aspect-ratio: 8 / 5;
+      margin: 0;
+      min-height: 148px;
+      height: 100%;
+      border: 0;
+    }
+
+    .featuredPost .thumb {
+      width: 100%;
+      min-height: 280px;
+      aspect-ratio: 16 / 9;
+      object-fit: cover;
+      display: block;
+    }
+
+    .cardBody {
+      min-width: 0;
+      display: grid;
+      gap: 2px;
+      align-content: start;
+      padding: 0;
+    }
+
+    .title {
+      display: block;
+      font-size: 1.08rem;
+      line-height: 1.4;
+      color: var(--ink);
+      font-weight: 400;
+    }
+
+    .seriesLine {
+      margin: 0;
+      font-size: 0.9rem;
+      line-height: 1.2;
+      color: #5f564b;
+    }
+
+    .summary {
+      margin: 2px 0 0;
+      font-size: 0.88rem;
+      line-height: 1.65;
+      color: var(--muted);
+      opacity: 0.9;
+    }
+
+    .featuredPost .summary {
+      width: 100%;
+    }
+
+    .featuredPost .cardBody {
+      width: 100%;
+      max-width: none;
+      gap: 6px;
+    }
+
+    .featuredPost .metaStack {
+      margin-top: 12px;
+    }
+
+    .metaStack {
+      margin-top: 8px;
+      display: grid;
+      gap: 0;
+    }
+
+    .metaInfo {
+      margin: 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: baseline;
+      font-size: 0.88rem;
+      color: var(--muted);
+      opacity: 0.9;
+    }
+
+    .category {
+      display: inline-flex;
+      gap: 4px;
+      align-items: center;
+      min-width: 0;
+    }
+
+    .boardCard {
+      padding: 9px 11px 10px;
+      display: grid;
+      gap: 4px;
+    }
+
+    .todayMarkerCard {
+      padding: 10px 11px 12px;
+      border-bottom: 1px dotted var(--line);
+    }
+
+    .todayMarkerText {
+      margin: 0;
+      font-size: 0.84rem;
+      line-height: 1.5;
+      color: var(--muted);
+      opacity: 0.8;
+    }
+
+    .boardComment {
+      margin: 0;
+      font-size: 0.94rem;
+      line-height: 1.6;
+      color: var(--muted);
+      text-decoration: none;
+      opacity: 0.92;
+    }
+
+    a.boardComment:hover {
+      opacity: 0.84;
+    }
+
     @media (max-width: 900px) {
       .homeGrid {
-        grid-template-columns: 1fr;
         gap: 18px;
       }
     }
 
+    @media (max-width: 760px) {
+      .postGrid {
+        --timeline-side-space: 28px;
+      }
+
+      .cardItem {
+        --dot-step: 7px;
+      }
+
+      .monthBridge {
+        --dot-step: 7px;
+        padding-left: 28px;
+        padding-right: 28px;
+      }
+
+      .postCard:not(.featuredPost) {
+        grid-template-columns: 184px minmax(0, 1fr);
+        gap: 10px;
+      }
+
+      .featuredPost {
+        gap: 12px;
+        max-width: none;
+      }
+
+      .postCard:not(.featuredPost) .thumb {
+        width: 100%;
+        min-height: 136px;
+        aspect-ratio: 8 / 5;
+        object-fit: cover;
+      }
+
+      .featuredPost .thumb {
+        min-height: 0;
+        aspect-ratio: 16 / 9;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .postGrid {
+        --timeline-side-space: 22px;
+      }
+
+      .cardItem {
+        --dot-step: 6px;
+      }
+
+      .monthBridge {
+        --dot-step: 6px;
+        padding-left: 22px;
+        padding-right: 22px;
+      }
+
+      .postCard:not(.featuredPost) {
+        grid-template-columns: 164px minmax(0, 1fr);
+        gap: 10px;
+        padding: 9px 10px 10px;
+      }
+
+      .featuredPost {
+        gap: 10px;
+        padding: 6px 0 4px;
+      }
+
+      .postCard:not(.featuredPost) .thumb {
+        min-height: 124px;
+        aspect-ratio: 4 / 3;
+      }
+
+      .featuredPost .thumb {
+        aspect-ratio: 4 / 3;
+      }
+
+    }
   </style>
 </BaseLayout>

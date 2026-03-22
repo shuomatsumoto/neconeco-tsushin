@@ -1,7 +1,7 @@
 ---
-import BaseLayout from "../layouts/BaseLayout.astro";
+import BaseLayout from "../../layouts/BaseLayout.astro";
 import { getCollection } from "astro:content";
-import { getContentSummary } from "../utils/content";
+import { getContentSummary } from "../../utils/content";
 
 const BASE = import.meta.env.BASE_URL.endsWith("/")
   ? import.meta.env.BASE_URL
@@ -22,36 +22,76 @@ function safeTags(tags: unknown): string[] {
   return Array.isArray(tags) ? tags.filter((t) => typeof t === "string") : [];
 }
 
-function isNotePost(data: { kind?: string }) {
-  return data.kind === "note";
-}
-
-const postItems = await getCollection("posts", ({ data }) => !data.draft);
+const [
+  translationItems,
+  researchItems,
+  novelItems,
+  genealogyItems,
+] = await Promise.all([
+  getCollection("translation", ({ data }) => !data.draft),
+  getCollection("research", ({ data }) => !data.draft),
+  getCollection("novel", ({ data }) => !data.draft),
+  getCollection("genealogy", ({ data }) => !data.draft),
+]);
 
 const rows: Row[] = [
-  ...postItems.map((p) => ({
-    href: `${BASE}posts/${p.slug}`,
-    title: p.data.title,
-    summary: getContentSummary(p.data.summary, p.body ?? ""),
-    date: p.data.date,
-    tags: safeTags(p.data.tags),
-    meta: [p.data.category ?? "", p.data.series ?? ""].filter(Boolean).join(" "),
-    typeLabel: isNotePost(p.data) ? "日記" : "記事",
-    sortKey: `posts:${p.slug}`,
+  ...translationItems.map((item) => ({
+    href: `${BASE}translation/${item.slug}`,
+    title: item.data.title,
+    summary: getContentSummary(item.data.summary, item.body ?? ""),
+    date: item.data.date,
+    tags: safeTags(item.data.tags),
+    meta: [
+      item.data.translationAuthor ?? "",
+      item.data.originalAuthor ?? "",
+      item.data.sourceTitle ?? "",
+    ].filter(Boolean).join(" "),
+    typeLabel: "翻訳",
+    sortKey: `translation:${item.slug}`,
+  })),
+  ...researchItems.map((item) => ({
+    href: `${BASE}research/${item.slug}`,
+    title: item.data.title,
+    summary: getContentSummary(item.data.summary, item.body ?? ""),
+    date: item.data.date,
+    tags: safeTags(item.data.tags),
+    meta: [item.data.category ?? "", item.data.series ?? ""].filter(Boolean).join(" "),
+    typeLabel: "研究",
+    sortKey: `research:${item.slug}`,
+  })),
+  ...novelItems.map((item) => ({
+    href: `${BASE}novel/${item.slug}`,
+    title: item.data.title,
+    summary: getContentSummary(item.data.summary, item.body ?? ""),
+    date: item.data.date,
+    tags: safeTags(item.data.tags),
+    meta: [item.data.category ?? "", item.data.series ?? ""].filter(Boolean).join(" "),
+    typeLabel: "小説",
+    sortKey: `novel:${item.slug}`,
+  })),
+  ...genealogyItems.map((item) => ({
+    href: `${BASE}genealogy/${item.slug}`,
+    title: item.data.title,
+    summary: getContentSummary(item.data.summary, item.body ?? ""),
+    date: item.data.date,
+    tags: safeTags(item.data.tags),
+    meta: [item.data.category ?? "", item.data.series ?? ""].filter(Boolean).join(" "),
+    typeLabel: "系譜",
+    sortKey: `genealogy:${item.slug}`,
   })),
 ].sort((a, b) => {
   if (a.date !== b.date) return a.date < b.date ? 1 : -1;
   return a.sortKey < b.sortKey ? 1 : -1;
 });
 ---
-<BaseLayout title="検索 | ねこねこ通信">
+<BaseLayout title="研究所の検索 | ねこねこ研究所">
   <section class="searchPage">
     <header class="searchHead">
-      <h2 class="h2" style="margin:0;">記事と日記の検索</h2>
+      <h2 class="h2" style="margin:0;">研究所の検索</h2>
       <p class="small count"><span id="count">{rows.length}</span> 件</p>
     </header>
 
-    <p class="small pageLead">ねこねこ通信の記事と日記だけを検索します。</p>
+    <p class="small pageLead">翻訳、研究、小説、系譜ノートを横断して検索します。</p>
 
     <div class="hr"></div>
 
