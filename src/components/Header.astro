@@ -9,7 +9,7 @@ const BASE = import.meta.env.BASE_URL.endsWith("/")
       <a href={BASE} class="siteTitleLink">
         <img
           id="siteTitleIcon"
-          src={`${BASE}images/deco/neco.jpg`}
+          src={`${BASE}images/deco/neco.png`}
           alt=""
           class="siteTitleIcon"
         />
@@ -40,7 +40,7 @@ const BASE = import.meta.env.BASE_URL.endsWith("/")
     action={`${BASE}search`}
     method="get"
     role="search"
-    aria-label="記事・研究・翻訳・創作の検索"
+    aria-label="記事の検索"
     data-open="false"
   >
     <input
@@ -48,7 +48,7 @@ const BASE = import.meta.env.BASE_URL.endsWith("/")
       class="headSearchInput"
       type="search"
       name="q"
-      placeholder="記事・研究・翻訳・創作を検索"
+      placeholder="記事を検索"
     />
   </form>
 

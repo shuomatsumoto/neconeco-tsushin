@@ -5,7 +5,6 @@ kind: "article"
 category: " "
 tags: [""]
 thumbnail: "/images/thumbs/"
-summary: " "
 supportUrl:
 draft: true
 locked: false

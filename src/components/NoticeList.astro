@@ -1,7 +1,8 @@
 ---
 type Notice = {
   date?: string;
-  title: string;
+  title?: string;
+  comment?: string;
   href?: string;
 };
 
@@ -32,6 +33,13 @@ function toDayNumber(ymd: string) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return null;
   const [y, m, d] = ymd.split("-").map(Number);
   return Math.floor(Date.UTC(y, m - 1, d) / 86400000);
+}
+
+function formatNoticeDate(date?: string) {
+  const value = (date ?? "").trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return value || "（未定）";
+  const [, month, day] = value.split("-");
+  return `${Number(month)}/${Number(day)}`;
 }
 
 const todayDay = toDayNumber(tokyoTodayYMD());
@@ -67,16 +75,18 @@ const grouped = shown.reduce((acc, n) => {
     {grouped.map((g) => (
       <li>
         <div class="noticeRow">
-          <span class="date">{g.date}</span>
+          <span class="date">{formatNoticeDate(g.date)}</span>
           <ul class="itemsList">
             {g.items.map((n) => (
               <li class="noticeItem">
                 <span class="bullet" aria-hidden="true">・</span>
-                {n.href ? (
-                  <a class="title link" href={n.href}>{n.title}</a>
-                ) : (
-                  <span class="title">{n.title}</span>
-                )}
+                <div class="noticeBody">
+                  {n.comment || n.title
+                    ? n.href
+                      ? <a class="comment link" href={n.href}>{n.comment ?? n.title}</a>
+                      : <div class="comment">{n.comment ?? n.title}</div>
+                    : null}
+                </div>
               </li>
             ))}
           </ul>
@@ -134,11 +144,19 @@ const grouped = shown.reduce((acc, n) => {
     align-items: baseline;
   }
 
+  .noticeBody {
+    min-width: 0;
+  }
+
   .bullet {
     margin-right: 0.1em;
   }
 
-  .title { color: inherit; }
+  .comment {
+    font-size: 0.95em;
+    line-height: 1.45;
+    opacity: 0.8;
+  }
 
   .link {
     text-decoration: none;

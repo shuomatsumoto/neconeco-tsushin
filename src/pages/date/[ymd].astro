@@ -2,7 +2,7 @@
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { getCollection } from "astro:content";
 import { toYMD } from "../../components/category";
-import news from "../../data/news.json";
+import board from "../../data/board.json";
 import memorials from "../../data/memorials.json";
 
 const BASE = import.meta.env.BASE_URL.endsWith("/")
@@ -48,7 +48,7 @@ const postsAll = await getCollection(
   ({ data }) => !data.draft && data.date === ymd
 );
 
-const newsItems = news.filter((n) => (n.date ?? "").trim() === ymd);
+const boardItems = board.filter((n) => (n.date ?? "").trim() === ymd);
 const mmdd = ymd.slice(5, 10);
 const memorialItems = memorials.filter((m) => m.date === ymd || m.date === mmdd);
 ---
@@ -83,11 +83,11 @@ const memorialItems = memorials.filter((m) => m.date === ymd || m.date === mmdd)
 
     </ul>
 
-    {!postsAll.length && !newsItems.length && !memorialItems.length && (
+    {!postsAll.length && !boardItems.length && !memorialItems.length && (
       <div class="small">この日には記事がありません。</div>
     )}
 
-    {(newsItems.length > 0 || memorialItems.length > 0) && (
+    {(boardItems.length > 0 || memorialItems.length > 0) && (
       <div class="metaBlock">
         {memorialItems.length > 0 && (
           <section class="metaSection isMemorial">
@@ -103,17 +103,17 @@ const memorialItems = memorials.filter((m) => m.date === ymd || m.date === mmdd)
           </section>
         )}
 
-        {newsItems.length > 0 && (
+        {boardItems.length > 0 && (
           <section class="metaSection">
-            <h3>ニュース</h3>
+            <h3>ボード</h3>
             <ul class="metaList">
-              {newsItems.map((n) => (
+              {boardItems.map((n) => (
                 <li>
                   <span aria-hidden="true">・</span>
                   {n.href ? (
-                    <a href={n.href}>{n.title}</a>
+                    <a href={n.href}>{n.comment ?? n.title}</a>
                   ) : (
-                    <span>{n.title}</span>
+                    <span>{n.comment ?? n.title}</span>
                   )}
                 </li>
               ))}

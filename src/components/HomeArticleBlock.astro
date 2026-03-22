@@ -4,22 +4,37 @@ export type HomeLatestItem = {
   title: string;
   date: string;
   summary?: string;
-  label: string;
+  label?: string;
   isPost: boolean;
   thumbnail?: string;
+  category?: string;
+  series?: string;
 };
 
-const { items, limit = 10, title = "最新の投稿", showTitle = true, showFeatured = true } = Astro.props as {
+const {
+  items,
+  limit = 10,
+  title = "最新の投稿",
+  showTitle = true,
+  showFeatured = true,
+  loadMoreStep,
+  loadMoreLabel = "もっと見る",
+} = Astro.props as {
   items: HomeLatestItem[];
   limit?: number;
   title?: string;
   showTitle?: boolean;
   showFeatured?: boolean;
+  loadMoreStep?: number;
+  loadMoreLabel?: string;
 };
 
-const shown = items.slice(0, limit);
-const featured = showFeatured ? shown[0] : undefined;
-const rest = showFeatured ? shown.slice(1) : shown;
+const featured = showFeatured ? items[0] : undefined;
+const rest = showFeatured ? items.slice(1) : items;
+const initialVisible = Math.max(0, limit);
+const restInitialVisible = showFeatured && featured ? Math.max(0, initialVisible - 1) : initialVisible;
+const canLoadMore = typeof loadMoreStep === "number" && loadMoreStep > 0 && items.length > initialVisible;
+const sectionId = `home-latest-${title.replace(/\s+/g, "-").toLowerCase() || "items"}`;
 
 const BASE = import.meta.env.BASE_URL.endsWith("/")
   ? import.meta.env.BASE_URL
@@ -31,6 +46,10 @@ function thumbSrc(raw?: string) {
   if (raw.startsWith("/")) return `${BASE}${raw.slice(1)}`;
   return `${BASE}${raw.replace(/^\/+/, "")}`;
 }
+
+function postMetaLabel(item: HomeLatestItem) {
+  return [item.category, item.series ? `〈${item.series}〉` : ""].filter(Boolean).join(" ");
+}
 ---
 <section class="homeLatest">
   {showTitle ? (
@@ -40,7 +59,7 @@ function thumbSrc(raw?: string) {
   ) : null}
 
   <ul class="list">
-    {featured ? (
+    {featured && initialVisible > 0 ? (
       <li class="entry featuredEntry">
         {featured.isPost ? (
           <a class="featuredPost" href={featured.href}>
@@ -50,7 +69,7 @@ function thumbSrc(raw?: string) {
             <div class="postMain">
               <strong class="featuredTitle post-title-2line">{featured.title}</strong>
               <p class="postMeta">
-                <span class="postLabel">{featured.label}</span>
+                {postMetaLabel(featured) ? <span class="postLabel">{postMetaLabel(featured)}</span> : null}
                 <span class="mono postDate">{featured.date}</span>
               </p>
               {featured.summary ? <p class="featuredSummary post-summary-2line">{featured.summary}</p> : null}
@@ -69,8 +88,12 @@ function thumbSrc(raw?: string) {
       </li>
     ) : null}
 
-    {rest.map((item) => (
-      <li class="entry">
+    {rest.map((item, index) => (
+      <li
+        class="entry"
+        data-load-more-item={canLoadMore ? "true" : undefined}
+        hidden={canLoadMore && index >= restInitialVisible}
+      >
         {item.isPost ? (
           <a class="postRow" href={item.href}>
             {thumbSrc(item.thumbnail) ? (
@@ -79,7 +102,7 @@ function thumbSrc(raw?: string) {
             <div class="postMain">
               <strong class="postTitle post-title-2line">{item.title}</strong>
               <p class="postMeta">
-                <span class="postLabel">{item.label}</span>
+                {postMetaLabel(item) ? <span class="postLabel">{postMetaLabel(item)}</span> : null}
                 <span class="mono postDate">{item.date}</span>
               </p>
               {item.summary ? <p class="postSummary post-summary-2line">{item.summary}</p> : null}
@@ -95,7 +118,48 @@ function thumbSrc(raw?: string) {
       </li>
     ))}
   </ul>
+
+  {canLoadMore ? (
+    <div class="moreRow">
+      <button
+        class="moreButton"
+        type="button"
+        data-home-more-button={sectionId}
+        data-home-more-step={String(loadMoreStep)}
+      >
+        {loadMoreLabel}
+      </button>
+    </div>
+  ) : null}
 </section>
+
+{canLoadMore ? (
+  <script is:inline define:vars={{ sectionId }}>
+    (function () {
+      var button = document.querySelector('[data-home-more-button="' + sectionId + '"]');
+      if (!button) return;
+      var section = button.closest(".homeLatest");
+      if (!section) return;
+
+      function update() {
+        var hiddenItems = section.querySelectorAll('[data-load-more-item="true"][hidden]');
+        button.hidden = hiddenItems.length === 0;
+      }
+
+      button.addEventListener("click", function () {
+        var step = Number(button.getAttribute("data-home-more-step") || "0");
+        if (!step) return;
+        var hiddenItems = Array.from(section.querySelectorAll('[data-load-more-item="true"][hidden]'));
+        hiddenItems.slice(0, step).forEach(function (item) {
+          item.hidden = false;
+        });
+        update();
+      });
+
+      update();
+    })();
+  </script>
+) : null}
 
 <style>
   .homeLatest {
@@ -108,6 +172,26 @@ function thumbSrc(raw?: string) {
     margin: 0;
     padding: 0;
     border-top: 1px dotted var(--line);
+  }
+
+  .moreRow {
+    padding-top: 2px;
+  }
+
+  .moreButton {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    font: inherit;
+    font-size: 0.84rem;
+    line-height: 1;
+    padding: 10px 0;
+    cursor: pointer;
+  }
+
+  .moreButton:hover {
+    opacity: 0.72;
   }
 
   .entry {

@@ -4,7 +4,6 @@ date: "2026-02-12"
 category: "雑記"
 tags: ["整理"]
 thumbnail: "/images/thumbs/kamo.jpg"
-summary: "『ねこねこ通信』作成のきっかけと、その方針について。"
 draft: false
 ---
 ### ねこねこ通信

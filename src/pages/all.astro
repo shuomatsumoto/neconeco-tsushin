@@ -63,9 +63,6 @@ const data = posts.map((p) => ({
     </header>
 
     <nav class="indexLinks" aria-label="一覧ページ">
-      <a href={`${BASE}study`} class="indexLink">研究・翻訳</a>
-      <a href={`${BASE}novel`} class="indexLink">創作</a>
-      <a href={`${BASE}genealogy`} class="indexLink">系譜学</a>
       <a href={`${BASE}category`} class="indexLink">カテゴリ</a>
       <a href={`${BASE}series`} class="indexLink">連載</a>
       <a href={`${BASE}tags`} class="indexLink">タグ</a>
@@ -101,7 +98,7 @@ const data = posts.map((p) => ({
             <div class="cardBody">
               <strong class="title post-title-2line">{it.title}</strong>
               <p class="date mono">{it.date}</p>
-              {it.summary ? <p class="summary post-summary-3line">{it.summary}</p> : null}
+              {it.summary ? <p class="summary post-summary-2line">{it.summary}</p> : null}
               <div class="metaStack">
                 {it.series ? <p class="seriesLine post-series-accent">〈{it.series}〉</p> : null}
                 <p class="metaInfo">
@@ -258,8 +255,7 @@ const data = posts.map((p) => ({
       padding: 0;
       margin: 0;
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 12px;
+      gap: 0;
     }
 
     .cardItem {
@@ -268,29 +264,34 @@ const data = posts.map((p) => ({
 
     .postCard {
       display: grid;
-      grid-template-rows: auto 1fr;
+      grid-template-columns: 120px minmax(0, 1fr);
+      gap: 12px;
       text-decoration: none;
       color: var(--ink);
-      border: 1px solid rgba(64, 54, 40, 0.14);
-      background: #fff;
-      height: 100%;
-      transition: border-color 0.16s ease, background 0.16s ease;
+      border-bottom: 1px dotted var(--line);
+      background: transparent;
+      padding: 10px 0 12px;
+      transition: opacity 0.16s ease;
     }
 
     .postCard:hover {
-      border-color: rgba(64, 54, 40, 0.3);
-      background: #fdfcf9;
+      opacity: 0.82;
     }
 
     .thumb {
-      border-bottom: 1px solid rgba(64, 54, 40, 0.12);
+      aspect-ratio: 8 / 5;
+      margin: 0;
+      min-height: 80px;
+      height: 100%;
+      border: 0;
     }
 
     .cardBody {
       min-width: 0;
       display: grid;
-      gap: var(--space-2);
-      padding: var(--space-2) var(--space-3) var(--space-3);
+      gap: 2px;
+      align-content: start;
+      padding: 0;
     }
 
     .category {
@@ -302,7 +303,7 @@ const data = posts.map((p) => ({
 
     .date {
       margin: 0;
-      font-size: 0.74rem;
+      font-size: 0.68rem;
       color: var(--muted);
       opacity: 0.78;
       white-space: nowrap;
@@ -310,28 +311,28 @@ const data = posts.map((p) => ({
 
     .title {
       display: block;
-      font-size: var(--fs-list-title);
-      line-height: 1.34;
+      font-size: 0.92rem;
+      line-height: 1.35;
       color: var(--ink);
       font-weight: 400;
     }
 
     .summary {
       margin: 0;
-      font-size: var(--fs-list-summary);
-      line-height: 1.5;
+      font-size: 0.8rem;
+      line-height: 1.45;
       color: var(--muted);
-      opacity: 0.74;
+      opacity: 0.86;
     }
 
     .seriesLine {
       margin: 0;
-      font-size: var(--fs-list-summary);
+      font-size: 0.76rem;
       line-height: 1.2;
     }
 
     .metaStack {
-      margin-top: var(--space-5) !important;
+      margin-top: 10px !important;
       padding-top: 0;
       display: grid;
       gap: 0;
@@ -339,30 +340,31 @@ const data = posts.map((p) => ({
 
     .summary + .metaStack,
     .title + .metaStack {
-      margin-top: var(--space-5) !important;
+      margin-top: 10px !important;
     }
 
     .metaInfo {
       margin: 0;
       display: flex;
       flex-wrap: wrap;
-      gap: var(--space-2);
+      gap: 5px;
       align-items: baseline;
-      font-size: var(--fs-list-meta);
+      font-size: 0.72rem;
       color: var(--muted);
     }
 
     .tags {
       margin: 0;
-      font-size: 0.78rem;
+      font-size: 0.7rem;
       color: var(--muted);
       opacity: 0.62;
       line-height: 1.4;
     }
 
-    @media (max-width: 900px) {
-      .postGrid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+    @media (max-width: 760px) {
+      .postCard {
+        grid-template-columns: 96px minmax(0, 1fr);
+        gap: 8px;
       }
     }
 
@@ -379,8 +381,14 @@ const data = posts.map((p) => ({
         width: 100%;
       }
 
-      .postGrid {
-        grid-template-columns: 1fr;
+      .postCard {
+        grid-template-columns: 96px minmax(0, 1fr);
+        gap: 8px;
+        padding: 9px 0;
+      }
+
+      .thumb {
+        min-height: 72px;
       }
     }
   </style>
