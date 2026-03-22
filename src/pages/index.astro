@@ -5,9 +5,7 @@ import Calendar from "../components/Calendar.astro";
 import HomeArticleBlock from "../components/HomeArticleBlock.astro";
 import type { HomeLatestItem } from "../components/HomeArticleBlock.astro";
 import { getContentSummary } from "../utils/content";
-import news from "../data/news.json";
-import notices from "../data/notices.json";
-import schedules from "../data/schedules.json";
+import board from "../data/board.json";
 import memorials from "../data/memorials.json";
 import NoticeList from "../components/NoticeList.astro";
 
@@ -25,91 +23,53 @@ const BASE = import.meta.env.BASE_URL.endsWith("/")
   ? import.meta.env.BASE_URL
   : import.meta.env.BASE_URL + "/";
 
-const translationItems = await getCollection("translation", ({ data }) => !data.draft);
-const researchItems = await getCollection("research", ({ data }) => !data.draft);
-const novelItems = await getCollection("novel", ({ data }) => !data.draft);
-const genealogyItems = await getCollection("genealogy", ({ data }) => !data.draft);
-
 const latestArticleItems: HomeLatestItem[] = posts
   .map((p) => ({
     href: `${BASE}posts/${p.slug}`,
     title: p.data.title,
     date: p.data.date,
     summary: getContentSummary(p.data.summary, p.body ?? ""),
-    label: "記事",
     isPost: true,
     thumbnail: p.data.thumbnail,
+    category: p.data.category,
+    series: p.data.series,
   }))
   .sort((a, b) => {
     if (a.date !== b.date) return a.date < b.date ? 1 : -1;
     return a.href < b.href ? 1 : -1;
   });
 
-const latestBandItems: HomeLatestItem[] = [
-  ...translationItems.map((p) => ({
-    href: `${BASE}study/${p.slug}`,
-    title: p.data.title,
-    date: p.data.date,
-    summary: p.data.summary ?? "",
-    label: "研究／翻訳",
-    isPost: false,
-  })),
-  ...researchItems.map((p) => ({
-    href: `${BASE}study/${p.slug}`,
-    title: p.data.title,
-    date: p.data.date,
-    summary: p.data.summary ?? "",
-    label: "研究／翻訳",
-    isPost: false,
-  })),
-  ...novelItems.map((p) => ({
-    href: `${BASE}novel/${p.slug}`,
-    title: p.data.title,
-    date: p.data.date,
-    summary: p.data.summary ?? "",
-    label: "創作",
-    isPost: false,
-  })),
-  ...genealogyItems.map((p) => ({
-    href: `${BASE}genealogy/${p.slug}`,
-    title: p.data.title,
-    date: p.data.date,
-    summary: p.data.summary ?? "",
-    label: "系譜学",
-    isPost: false,
-  })),
-].sort((a, b) => {
-  if (a.date !== b.date) return a.date < b.date ? 1 : -1;
-  return a.href < b.href ? 1 : -1;
+function isYmd(value: string | undefined) {
+  return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
+}
+
+const boardItems = [...board].sort((a, b) => {
+  const aDate = a.date ?? "";
+  const bDate = b.date ?? "";
+  const aIsYmd = isYmd(aDate);
+  const bIsYmd = isYmd(bDate);
+
+  if (aIsYmd && bIsYmd) return aDate < bDate ? 1 : -1;
+  if (aIsYmd) return -1;
+  if (bIsYmd) return 1;
+  return aDate.localeCompare(bDate, "ja");
 });
 ---
 <BaseLayout title="ねこねこ通信">
   <div class="homeGrid">
     <main class="homeCol">
       <section class="homeSection">
-        <HomeArticleBlock items={latestArticleItems} title="最新の記事" limit={3} />
-      </section>
-
-      <section class="homeSection">
-        <HomeArticleBlock items={latestBandItems} limit={3} showTitle={false} showFeatured={false} />
-      </section>
-
-      <section class="homeSection">
-        <Calendar posts={posts} memorials={memorials} />
+        <HomeArticleBlock items={latestArticleItems} limit={6} loadMoreStep={6} showTitle={false} />
       </section>
     </main>
 
     <aside class="homeCol homeAside">
-      <section class="homeSection panelSection">
-        <NoticeList notices={news} title="ニュース" limit={8} recentDays={7} />
+      <section class="homeSection">
+        <NoticeList notices={boardItems} title="ボード" limit={16} />
       </section>
 
-      <section class="homeSection panelSection">
-        <NoticeList notices={notices} title="お知らせ" limit={8} recentDays={7} />
-      </section>
-
-      <section class="homeSection panelSection">
-        <NoticeList notices={schedules} title="予定" limit={8} />
+      <section class="homeSection">
+        <Calendar posts={posts} memorials={memorials} />
       </section>
     </aside>
   </div>
@@ -130,33 +90,15 @@ const latestBandItems: HomeLatestItem[] = [
       min-width: 0;
     }
 
-    .homeAside {
-      padding-left: 0;
-      border-left: 0;
-    }
-
     .homeSection {
       padding: 0;
       margin: 0;
-    }
-
-    .panelSection {
-      border: 1px solid rgba(64, 54, 40, 0.22);
-      border-radius: 0;
-      padding: 10px 12px 8px;
-      background: #fff;
     }
 
     @media (max-width: 900px) {
       .homeGrid {
         grid-template-columns: 1fr;
         gap: 18px;
-      }
-      .homeAside {
-        padding-left: 0;
-        border-left: 0;
-        border-top: 0;
-        padding-top: 0;
       }
     }
 
