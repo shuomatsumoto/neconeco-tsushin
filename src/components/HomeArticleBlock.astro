@@ -17,24 +17,18 @@ const {
   title = "最新の投稿",
   showTitle = true,
   showFeatured = true,
-  loadMoreStep,
-  loadMoreLabel = "もっと見る",
 } = Astro.props as {
   items: HomeLatestItem[];
   limit?: number;
   title?: string;
   showTitle?: boolean;
   showFeatured?: boolean;
-  loadMoreStep?: number;
-  loadMoreLabel?: string;
 };
 
 const featured = showFeatured ? items[0] : undefined;
 const rest = showFeatured ? items.slice(1) : items;
 const initialVisible = Math.max(0, limit);
 const restInitialVisible = showFeatured && featured ? Math.max(0, initialVisible - 1) : initialVisible;
-const canLoadMore = typeof loadMoreStep === "number" && loadMoreStep > 0 && items.length > initialVisible;
-const sectionId = `home-latest-${title.replace(/\s+/g, "-").toLowerCase() || "items"}`;
 
 const BASE = import.meta.env.BASE_URL.endsWith("/")
   ? import.meta.env.BASE_URL
@@ -88,11 +82,12 @@ function postMetaLabel(item: HomeLatestItem) {
       </li>
     ) : null}
 
+    <slot name="after-featured" />
+
     {rest.map((item, index) => (
       <li
         class="entry"
-        data-load-more-item={canLoadMore ? "true" : undefined}
-        hidden={canLoadMore && index >= restInitialVisible}
+        hidden={index >= restInitialVisible}
       >
         {item.isPost ? (
           <a class="postRow" href={item.href}>
@@ -119,47 +114,7 @@ function postMetaLabel(item: HomeLatestItem) {
     ))}
   </ul>
 
-  {canLoadMore ? (
-    <div class="moreRow">
-      <button
-        class="moreButton"
-        type="button"
-        data-home-more-button={sectionId}
-        data-home-more-step={String(loadMoreStep)}
-      >
-        {loadMoreLabel}
-      </button>
-    </div>
-  ) : null}
 </section>
-
-{canLoadMore ? (
-  <script is:inline define:vars={{ sectionId }}>
-    (function () {
-      var button = document.querySelector('[data-home-more-button="' + sectionId + '"]');
-      if (!button) return;
-      var section = button.closest(".homeLatest");
-      if (!section) return;
-
-      function update() {
-        var hiddenItems = section.querySelectorAll('[data-load-more-item="true"][hidden]');
-        button.hidden = hiddenItems.length === 0;
-      }
-
-      button.addEventListener("click", function () {
-        var step = Number(button.getAttribute("data-home-more-step") || "0");
-        if (!step) return;
-        var hiddenItems = Array.from(section.querySelectorAll('[data-load-more-item="true"][hidden]'));
-        hiddenItems.slice(0, step).forEach(function (item) {
-          item.hidden = false;
-        });
-        update();
-      });
-
-      update();
-    })();
-  </script>
-) : null}
 
 <style>
   .homeLatest {
@@ -174,28 +129,45 @@ function postMetaLabel(item: HomeLatestItem) {
     border-top: 1px dotted var(--line);
   }
 
-  .moreRow {
-    padding-top: 2px;
-  }
-
-  .moreButton {
-    appearance: none;
-    border: 0;
-    background: transparent;
-    color: var(--muted);
-    font: inherit;
-    font-size: 0.84rem;
-    line-height: 1;
-    padding: 10px 0;
-    cursor: pointer;
-  }
-
-  .moreButton:hover {
-    opacity: 0.72;
-  }
-
   .entry {
     border-bottom: 1px dotted var(--line);
+  }
+
+  :global(.homeLatest .entryInsert) {
+    list-style: none;
+    border: 1px solid rgba(64, 54, 40, 0.16);
+    padding: 12px 14px;
+    margin: 4px 0 6px;
+    background: #fbfaf6;
+  }
+
+  :global(.homeLatest .entryInsert .sectionHead) {
+    margin: 0 0 10px;
+  }
+
+  :global(.homeLatest .entryInsert .sectionHead h2) {
+    font-size: 0.82rem;
+    letter-spacing: 0.08em;
+  }
+
+  :global(.homeLatest .entryInsert .noticeRow) {
+    padding: 6px 0;
+  }
+
+  :global(.homeLatest .entryInsert .postList > li:last-child .noticeRow) {
+    border-bottom: 0;
+    padding-bottom: 0;
+  }
+
+  :global(.homeLatest .entryInsert .date) {
+    font-size: 0.72rem;
+    opacity: 0.76;
+  }
+
+  :global(.homeLatest .entryInsert .comment) {
+    font-size: 0.82rem;
+    line-height: 1.5;
+    opacity: 0.86;
   }
 
   .featuredEntry {

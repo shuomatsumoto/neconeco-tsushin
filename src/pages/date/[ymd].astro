@@ -10,30 +10,43 @@ const BASE = import.meta.env.BASE_URL.endsWith("/")
   : import.meta.env.BASE_URL + "/";
 
 export async function getStaticPaths() {
-  const posts = await getCollection("posts", ({ data }) => !data.draft);
-  const postDates = posts.map((p) => p.data.date);
-
-  const now = new Date();
-  const dates = new Set<string>();
-
-  // Past/Future navigation support range
-  const startYear = now.getFullYear() - 10;
-  const endYear = now.getFullYear() + 10;
-
-  const cursor = new Date(startYear, 0, 1);
-  const end = new Date(endYear, 11, 31);
-  while (cursor <= end) {
-    const y = cursor.getFullYear();
-    const m = String(cursor.getMonth() + 1).padStart(2, "0");
-    const d = String(cursor.getDate()).padStart(2, "0");
-    dates.add(`${y}-${m}-${d}`);
-    cursor.setDate(cursor.getDate() + 1);
+  function isYmd(value: string | undefined): value is string {
+    return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
   }
 
-  // Keep any out-of-range content dates routable too.
-  for (const d of postDates) {
-    if (/^\d{4}-\d{2}-\d{2}$/.test(d)) {
-      dates.add(d);
+  function isMmdd(value: string | undefined): value is string {
+    return typeof value === "string" && /^\d{2}-\d{2}$/.test(value);
+  }
+
+  const posts = await getCollection("posts", ({ data }) => !data.draft);
+  const dates = new Set<string>();
+  const years = new Set<number>([
+    new Date().getFullYear(),
+  ]);
+
+  for (const post of posts) {
+    if (!isYmd(post.data.date)) continue;
+    dates.add(post.data.date);
+    years.add(Number(post.data.date.slice(0, 4)));
+  }
+
+  for (const item of board) {
+    if (!isYmd(item.date)) continue;
+    dates.add(item.date);
+    years.add(Number(item.date.slice(0, 4)));
+  }
+
+  for (const memorial of memorials) {
+    if (isYmd(memorial.date)) {
+      dates.add(memorial.date);
+      years.add(Number(memorial.date.slice(0, 4)));
+    }
+  }
+
+  for (const memorial of memorials) {
+    if (!isMmdd(memorial.date)) continue;
+    for (const year of years) {
+      dates.add(`${year}-${memorial.date}`);
     }
   }
 

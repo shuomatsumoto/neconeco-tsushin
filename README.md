@@ -1,5 +1,8 @@
 # ねこねこ通信（Astro）
 
+日記、分析、翻訳、研究、小説、系譜ノートをまとめて扱う個人サイトです。
+`ねこねこ通信` と `ねこねこ研究所` を同じ Astro プロジェクト内で運用しています。
+
 ## 開発コマンド
 
 | Command | 用途 |
@@ -9,47 +12,56 @@
 | `npm run build` | 本番ビルド |
 | `npm run preview` | ビルド結果のローカル確認 |
 
-## 主要構成
+## コンテンツ構成
 
-- `src/pages/index.astro`: トップページ（記事ブロック、カレンダー、ニュース/お知らせ/予定）
-- `src/components/HomeArticleBlock.astro`: トップ記事ブロック（先頭1件 + 残りグリッド）
-- `src/components/Calendar.astro`: カレンダー表示
-- `src/components/NoticeList.astro`: ニュース/お知らせ/予定の共通表示
-- `src/styles/global.css`: 共通スタイル（カード系プリミティブ含む）
-- `src/pages/date/[ymd].astro`: 日付ページ
+### Collections
 
-## データ運用ルール（JSON）
+- `src/content/posts`: 通信本体の記事。雑記や分析などを含む
+- `src/content/translation`: 翻訳
+- `src/content/research`: 研究ノート
+- `src/content/novel`: 小説・創作
+- `src/content/genealogy`: 系譜ノート
 
-### `src/data/news.json`
-- 用途: トップの「ニュース」、日付ページの「ニュース」
-- 形式:
+共通 frontmatter のスキーマは `src/content/config.ts` で定義しています。
+
+### Templates
+
+テンプレートは collection の外に置いています。
+
+- `src/templates/content/posts.md`
+- `src/templates/content/translation.md`
+- `src/templates/content/research.md`
+- `src/templates/content/novel.md`
+
+新規作成時はこれらを複製して使います。
+
+## 主要ページ
+
+- `src/pages/index.astro`: 通信トップ。記事と `board.json` を月単位のタイムラインとして表示
+- `src/pages/all.astro`: 記事一覧
+- `src/pages/search.astro`: 全 collection 横断検索
+- `src/pages/study/index.astro`: 研究所トップ。翻訳と研究を束ねて表示
+- `src/pages/date/[ymd].astro`: 実際に記事・ボード・記念日がある日だけ生成する日付ページ
+
+## 主要データ
+
+### `src/data/board.json`
+
+トップと日付ページに出す短文ログ。
+
 ```json
 [
-  { "date": "2026-02-18", "title": "..." }
-]
-```
-
-### `src/data/notices.json`
-- 用途: トップの「お知らせ」
-- 形式:
-```json
-[
-  { "date": "2026-02-18", "title": "...", "href": "https://..." }
-]
-```
-
-### `src/data/schedules.json`
-- 用途: トップの「予定」
-- 形式:
-```json
-[
-  { "date": "3月中旬", "title": "..." }
+  {
+    "date": "2026-03-22",
+    "comment": "今日は天気が穏やか。窓を開けると、外から線香が匂う。"
+  }
 ]
 ```
 
 ### `src/data/memorials.json`
-- 用途: カレンダー上の記念日マーク、日付ページの「記念日」
-- 形式:
+
+日付ページの記念日表示用。
+
 ```json
 [
   { "date": "02-12", "title": "毎年の記念日" },
@@ -57,17 +69,20 @@
 ]
 ```
 
+### その他の JSON
+
+- `src/data/plans.json`: 計画メモ
+- `src/data/music-board.json`
+- `src/data/study-board.json`
+- `src/data/novel-board.json`
+- `src/data/genealogy-board.json`
+- `src/data/literature-philosophy-board.json`
+
+用途が増えたら、対応ページ側の参照箇所も合わせて更新します。
+
 ## 日付フォーマット規約
 
 - 厳密日付: `YYYY-MM-DD`
-  - 例: `2026-02-18`
-- 年次繰り返し（記念日専用）: `MM-DD`
-  - 例: `02-12`
-- 予定は自由記述可
-  - 例: `3月中旬`, `未定`
+- 年次繰り返し: `MM-DD`
 
-## 表示ロジックの注意
-
-- `NoticeList` の `recentDays` を指定すると、`YYYY-MM-DD` の項目のみが「直近N日」で表示される。
-- 現在、トップのニュース/お知らせは `recentDays={7}`。
-- 予定（自由記述日付）は `recentDays` を使わない運用を推奨。
+`board.json` と各 collection の `date` は、原則として `YYYY-MM-DD` を使う前提です。
