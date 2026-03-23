@@ -1,25 +1,35 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
+import { getCollection } from "astro:content";
+import BandList, { type BandItem } from "../../components/BandList.astro";
+
 const BASE = import.meta.env.BASE_URL.endsWith("/")
   ? import.meta.env.BASE_URL
   : import.meta.env.BASE_URL + "/";
-const nextHref = `${BASE}study`;
----
-<BaseLayout title="ねこねこ研究所 | ねこねこ通信">
-  <section class="redirectPage">
-    <p class="small">このページは移動しました。</p>
-    <p><a href={nextHref}>ねこねこ研究所へ移動</a></p>
-  </section>
 
-  <script is:inline define:vars={{ nextHref }}>
-    window.location.replace(nextHref);
-  </script>
+const translationItems = await getCollection("translation", ({ data }) => !data.draft);
+
+const items: BandItem[] = translationItems
+  .map((item) => ({
+    href: `${BASE}study/${item.slug}`,
+    title: item.data.title,
+    date: item.data.date,
+    summary: item.data.summary ?? "",
+  }))
+  .sort((a, b) => {
+    if (a.date !== b.date) return a.date < b.date ? 1 : -1;
+    return a.href < b.href ? 1 : -1;
+  });
+---
+<BaseLayout title="翻訳 | ねこねこ研究所">
+  <section class="pageWrap">
+    <BandList items={items} title="翻訳" emptyText="翻訳の投稿はまだありません。" />
+  </section>
 </BaseLayout>
 
 <style>
-  .redirectPage {
+  .pageWrap {
     width: min(100%, 940px);
     margin-inline: auto;
-    padding: 20px 0;
   }
 </style>

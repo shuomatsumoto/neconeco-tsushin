@@ -8,6 +8,7 @@ const entrySchema = z.object({
   kind: z.enum(["article", "note"]).optional(),
   category: z.string().min(1).optional(),
   series: z.string().min(1).optional(),
+  studySeries: z.string().min(1).optional(),
   tags: z.array(z.string()).default([]),
   draft: z.boolean().default(false),
   locked: z.boolean().default(false),
@@ -41,15 +42,9 @@ const novel = defineCollection({
   schema: entrySchema,
 });
 
-const genealogy = defineCollection({
-  type: "content",
-  schema: entrySchema,
-});
-
 export const collections = {
   posts: post,
   translation,
   research,
   novel,
-  genealogy,
 };

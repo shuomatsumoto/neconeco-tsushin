@@ -142,7 +142,6 @@ function buildTimeline(month: string) {
 }
 
 const timelineWithGap = buildTimeline(latestMonth);
-const featuredPostHref = timelineWithGap.find((entry) => entry.item.kind === "post")?.item.href ?? "";
 const previousMonth = latestMonth ? shiftMonth(latestMonth, -1) : "";
 const previousTimelineWithGap = previousMonth ? buildTimeline(previousMonth) : [];
 const previousMonthLabel = previousMonth ? formatMonthLabel(previousMonth) : "";
@@ -162,10 +161,8 @@ const crossMonthDots =
         {timelineWithGap.length ? (
           <ul class="postGrid">
             {timelineWithGap.map(({ item, gapDots, showBead }) => {
-              const isFeatured = item.kind === "post" && item.href === featuredPostHref;
-
               return (
-              <li class={`cardItem${isFeatured ? " featuredCardItem" : ""}`} style={`--dot-count:${gapDots};`}>
+              <li class="cardItem" style={`--dot-count:${gapDots};`}>
                 {gapDots > 0 ? (
                   <span class="dotTrail" aria-hidden="true">
                     {Array.from({ length: gapDots }).map(() => (
@@ -179,10 +176,7 @@ const crossMonthDots =
                   </span>
                 ) : null}
                 {item.kind === "post" ? (
-                  <a
-                    class={`postCard${isFeatured ? " featuredPost" : ""}`}
-                    href={item.href}
-                  >
+                  <a class="postCard" href={item.href}>
                     {item.thumbnail ? (
                       <img class="thumb post-thumb-wide" src={thumbSrc(item.thumbnail)} alt="" loading="lazy" />
                     ) : null}
@@ -362,11 +356,6 @@ const crossMonthDots =
       padding-left: 34px;
     }
 
-    .featuredCardItem {
-      margin-top: 2px;
-      padding-bottom: 8px;
-    }
-
     .dotTrail {
       position: absolute;
       left: var(--rail-x);
@@ -418,14 +407,6 @@ const crossMonthDots =
       transition: opacity 0.16s ease;
     }
 
-    .featuredPost {
-      grid-template-columns: minmax(0, 1fr);
-      gap: 14px;
-      padding: 8px 0 10px;
-      width: 100%;
-      max-width: none;
-    }
-
     .postCard:hover {
       opacity: 0.82;
     }
@@ -436,14 +417,6 @@ const crossMonthDots =
       min-height: 148px;
       height: 100%;
       border: 0;
-    }
-
-    .featuredPost .thumb {
-      width: 100%;
-      min-height: 280px;
-      aspect-ratio: 16 / 9;
-      object-fit: cover;
-      display: block;
     }
 
     .cardBody {
@@ -475,20 +448,6 @@ const crossMonthDots =
       line-height: 1.65;
       color: var(--muted);
       opacity: 0.9;
-    }
-
-    .featuredPost .summary {
-      width: 100%;
-    }
-
-    .featuredPost .cardBody {
-      width: 100%;
-      max-width: none;
-      gap: 6px;
-    }
-
-    .featuredPost .metaStack {
-      margin-top: 12px;
     }
 
     .metaStack {
@@ -568,26 +527,16 @@ const crossMonthDots =
         padding-right: 28px;
       }
 
-      .postCard:not(.featuredPost) {
+      .postCard {
         grid-template-columns: 184px minmax(0, 1fr);
         gap: 10px;
       }
 
-      .featuredPost {
-        gap: 12px;
-        max-width: none;
-      }
-
-      .postCard:not(.featuredPost) .thumb {
+      .postCard .thumb {
         width: 100%;
         min-height: 136px;
         aspect-ratio: 8 / 5;
         object-fit: cover;
-      }
-
-      .featuredPost .thumb {
-        min-height: 0;
-        aspect-ratio: 16 / 9;
       }
     }
 
@@ -606,26 +555,16 @@ const crossMonthDots =
         padding-right: 22px;
       }
 
-      .postCard:not(.featuredPost) {
+      .postCard {
         grid-template-columns: 164px minmax(0, 1fr);
         gap: 10px;
         padding: 9px 10px 10px;
       }
 
-      .featuredPost {
-        gap: 10px;
-        padding: 6px 0 4px;
-      }
-
-      .postCard:not(.featuredPost) .thumb {
+      .postCard .thumb {
         min-height: 124px;
         aspect-ratio: 4 / 3;
       }
-
-      .featuredPost .thumb {
-        aspect-ratio: 4 / 3;
-      }
-
     }
   </style>
 </BaseLayout>

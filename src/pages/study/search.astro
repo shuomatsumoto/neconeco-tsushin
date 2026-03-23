@@ -2,6 +2,7 @@
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { getCollection } from "astro:content";
 import { getContentSummary } from "../../utils/content";
+import { studySeriesMap } from "../../data/study-series";
 
 const BASE = import.meta.env.BASE_URL.endsWith("/")
   ? import.meta.env.BASE_URL
@@ -26,12 +27,10 @@ const [
   translationItems,
   researchItems,
   novelItems,
-  genealogyItems,
 ] = await Promise.all([
   getCollection("translation", ({ data }) => !data.draft),
   getCollection("research", ({ data }) => !data.draft),
   getCollection("novel", ({ data }) => !data.draft),
-  getCollection("genealogy", ({ data }) => !data.draft),
 ]);
 
 const rows: Row[] = [
@@ -45,6 +44,7 @@ const rows: Row[] = [
       item.data.translationAuthor ?? "",
       item.data.originalAuthor ?? "",
       item.data.sourceTitle ?? "",
+      item.data.studySeries ? studySeriesMap.get(item.data.studySeries)?.title ?? "" : "",
     ].filter(Boolean).join(" "),
     typeLabel: "翻訳",
     sortKey: `translation:${item.slug}`,
@@ -55,7 +55,11 @@ const rows: Row[] = [
     summary: getContentSummary(item.data.summary, item.body ?? ""),
     date: item.data.date,
     tags: safeTags(item.data.tags),
-    meta: [item.data.category ?? "", item.data.series ?? ""].filter(Boolean).join(" "),
+    meta: [
+      item.data.category ?? "",
+      item.data.series ?? "",
+      item.data.studySeries ? studySeriesMap.get(item.data.studySeries)?.title ?? "" : "",
+    ].filter(Boolean).join(" "),
     typeLabel: "研究",
     sortKey: `research:${item.slug}`,
   })),
@@ -65,19 +69,13 @@ const rows: Row[] = [
     summary: getContentSummary(item.data.summary, item.body ?? ""),
     date: item.data.date,
     tags: safeTags(item.data.tags),
-    meta: [item.data.category ?? "", item.data.series ?? ""].filter(Boolean).join(" "),
+    meta: [
+      item.data.category ?? "",
+      item.data.series ?? "",
+      item.data.studySeries ? studySeriesMap.get(item.data.studySeries)?.title ?? "" : "",
+    ].filter(Boolean).join(" "),
     typeLabel: "小説",
     sortKey: `novel:${item.slug}`,
-  })),
-  ...genealogyItems.map((item) => ({
-    href: `${BASE}genealogy/${item.slug}`,
-    title: item.data.title,
-    summary: getContentSummary(item.data.summary, item.body ?? ""),
-    date: item.data.date,
-    tags: safeTags(item.data.tags),
-    meta: [item.data.category ?? "", item.data.series ?? ""].filter(Boolean).join(" "),
-    typeLabel: "系譜",
-    sortKey: `genealogy:${item.slug}`,
   })),
 ].sort((a, b) => {
   if (a.date !== b.date) return a.date < b.date ? 1 : -1;
@@ -91,7 +89,7 @@ const rows: Row[] = [
       <p class="small count"><span id="count">{rows.length}</span> 件</p>
     </header>
 
-    <p class="small pageLead">翻訳、研究、小説、系譜ノートを横断して検索します。</p>
+    <p class="small pageLead">翻訳、研究、小説を横断して検索します。</p>
 
     <div class="hr"></div>
 

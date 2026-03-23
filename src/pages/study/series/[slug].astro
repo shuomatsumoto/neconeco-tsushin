@@ -1,0 +1,315 @@
+---
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+import { getCollection } from "astro:content";
+import { getContentSummary } from "../../../utils/content";
+import { studySeriesList, studySeriesMap } from "../../../data/study-series";
+
+const BASE = import.meta.env.BASE_URL.endsWith("/")
+  ? import.meta.env.BASE_URL
+  : import.meta.env.BASE_URL + "/";
+
+function thumbSrc(raw?: string) {
+  if (!raw) return null;
+  if (raw.startsWith("http://") || raw.startsWith("https://")) return raw;
+  if (raw.startsWith("/")) return `${BASE}${raw.slice(1)}`;
+  return `${BASE}${raw.replace(/^\/+/, "")}`;
+}
+
+export async function getStaticPaths() {
+  return studySeriesList.map((series) => ({
+    params: { slug: series.slug },
+    props: { seriesSlug: series.slug },
+  }));
+}
+
+const { seriesSlug } = Astro.props as { seriesSlug: string };
+const series = studySeriesMap.get(seriesSlug);
+
+if (!series) {
+  throw new Error(`Unknown study series: ${seriesSlug}`);
+}
+
+const [translationItems, researchItems, novelItems] = await Promise.all([
+  getCollection("translation", ({ data }) => !data.draft && data.studySeries === seriesSlug),
+  getCollection("research", ({ data }) => !data.draft && data.studySeries === seriesSlug),
+  getCollection("novel", ({ data }) => !data.draft && data.studySeries === seriesSlug),
+]);
+
+const items = [
+  ...translationItems.map((item) => ({
+    href: `${BASE}study/${item.slug}`,
+    title: item.data.title,
+    date: item.data.date,
+    summary: getContentSummary(item.data.summary, item.body ?? ""),
+    label: "翻訳",
+  })),
+  ...researchItems.map((item) => ({
+    href: `${BASE}study/${item.slug}`,
+    title: item.data.title,
+    date: item.data.date,
+    summary: getContentSummary(item.data.summary, item.body ?? ""),
+    label: "研究",
+  })),
+  ...novelItems.map((item) => ({
+    href: `${BASE}novel/${item.slug}`,
+    title: item.data.title,
+    date: item.data.date,
+    summary: getContentSummary(item.data.summary, item.body ?? ""),
+    label: "小説",
+  })),
+].sort((a, b) => {
+  if (a.date !== b.date) return a.date < b.date ? 1 : -1;
+  return a.href < b.href ? 1 : -1;
+});
+
+const thumb = thumbSrc(series.thumbnail);
+const seriesCount = items.length + 1;
+---
+<BaseLayout title={`${series.title} | ねこねこ研究所`}>
+  <section class="seriesPage">
+    <header class="seriesHead">
+      {thumb ? <img class="seriesThumb" src={thumb} alt="" /> : null}
+      <div class="seriesBody">
+        <h1 class="h1">{series.title}</h1>
+        <p class="seriesSummary">{series.summary}</p>
+        <div class="seriesMeta seriesMetaFoot">
+          <p class="seriesCount small mono">{seriesCount} セリー</p>
+        </div>
+        <div class="seriesMeta seriesMetaDate">
+          {series.nextUpdate ? <span class="seriesDate">🗓️{series.nextUpdate}更新予定</span> : null}
+        </div>
+      </div>
+    </header>
+
+    <section class="conceptBlock" aria-labelledby="concept-title">
+      <div class="entryTop conceptTop">
+        <span class="entryLabel">構想書 / セリー</span>
+      </div>
+      <h2 id="concept-title" class="conceptTitle">{series.concept.title}</h2>
+      <p class="conceptSummary">{series.concept.summary}</p>
+      <div class="conceptBody">
+        {series.concept.body.map((line) => (
+          <p>{line}</p>
+        ))}
+      </div>
+      {series.concept.plans?.length ? (
+        <ul class="conceptPlan">
+          {series.concept.plans.map((plan) => (
+            <li>{plan}</li>
+          ))}
+        </ul>
+      ) : null}
+    </section>
+
+    {items.length ? (
+      <ul class="entryList">
+        {items.map((item) => (
+          <li>
+            <a class="entryCard" href={item.href}>
+              <div class="entryTop">
+                <span class="entryLabel">{item.label} / セリー</span>
+                <span class="entryDate mono">{item.date}</span>
+              </div>
+              <strong class="entryTitle">{item.title}</strong>
+              {item.summary ? <p class="entrySummary">{item.summary}</p> : null}
+            </a>
+          </li>
+        ))}
+      </ul>
+    ) : (
+      <p class="emptyText">構想書以外の公開セリーはまだありません。</p>
+    )}
+  </section>
+</BaseLayout>
+
+<style>
+  .seriesPage {
+    width: min(100%, 940px);
+    margin-inline: auto;
+    display: grid;
+    gap: 22px;
+  }
+
+  .seriesHead {
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr);
+    gap: 20px;
+    align-items: start;
+  }
+
+  .seriesThumb {
+    width: 100%;
+    aspect-ratio: 5 / 4;
+    object-fit: cover;
+    display: block;
+  }
+
+  .seriesBody {
+    display: grid;
+    gap: 4px;
+    align-content: start;
+    grid-template-rows: auto auto 1fr auto auto;
+  }
+
+  .seriesMeta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px 10px;
+    color: var(--muted);
+    align-items: baseline;
+    font-size: 0.68rem;
+    line-height: 1.3;
+  }
+
+  .seriesMetaFoot {
+    grid-row: 4;
+    margin-top: 2px;
+  }
+
+  .seriesMetaDate {
+    grid-row: 5;
+    margin-top: auto;
+    align-self: end;
+  }
+
+  .seriesDate {
+    margin: 0;
+    color: #5e7894;
+    opacity: 0.82;
+    white-space: normal;
+    font-size: 0.8rem;
+    line-height: 1.35;
+  }
+
+  .seriesSummary {
+    margin: 0;
+    font-size: 0.82rem;
+    line-height: 1.45;
+    color: var(--muted);
+    opacity: 0.86;
+  }
+
+  .seriesCount {
+    margin: 0;
+    font-size: 0.68rem;
+    color: var(--muted);
+    opacity: 0.8;
+  }
+
+  .conceptBlock {
+    display: grid;
+    gap: 8px;
+    padding: 0 0 16px;
+    border-bottom: 1px dotted var(--line);
+  }
+
+  .conceptTop {
+    justify-content: flex-start;
+    margin-bottom: 0;
+  }
+
+  .conceptTitle {
+    margin: 0;
+    font-size: 1rem;
+    line-height: 1.4;
+    font-weight: 400;
+  }
+
+  .conceptSummary {
+    margin: 0;
+    font-size: 0.86rem;
+    line-height: 1.6;
+    color: var(--muted);
+  }
+
+  .conceptBody {
+    display: grid;
+    gap: 8px;
+  }
+
+  .conceptBody p {
+    margin: 0;
+    font-size: 0.9rem;
+    line-height: 1.7;
+  }
+
+  .conceptPlan {
+    margin: 2px 0 0;
+    padding-left: 1.2rem;
+    display: grid;
+    gap: 4px;
+    color: var(--muted);
+    font-size: 0.84rem;
+    line-height: 1.6;
+  }
+
+  .entryList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 0;
+  }
+
+  .entryCard {
+    display: block;
+    padding: 12px 0 14px;
+    border-bottom: 1px dotted var(--line);
+    color: var(--ink);
+    text-decoration: none;
+  }
+
+  .entryCard:hover {
+    opacity: 0.82;
+  }
+
+  .entryTop {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: baseline;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+
+  .entryLabel {
+    font-size: 0.74rem;
+  }
+
+  .entryDate {
+    font-size: 0.72rem;
+    white-space: nowrap;
+  }
+
+  .entryTitle {
+    display: block;
+    font-size: 0.98rem;
+    line-height: 1.4;
+    font-weight: 400;
+  }
+
+  .entrySummary {
+    margin: 6px 0 0;
+    font-size: 0.82rem;
+    line-height: 1.55;
+    color: var(--muted);
+    opacity: 0.86;
+  }
+
+  .emptyText {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.86rem;
+  }
+
+  @media (max-width: 760px) {
+    .seriesHead {
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    .seriesThumb {
+      aspect-ratio: 16 / 10;
+    }
+  }
+</style>

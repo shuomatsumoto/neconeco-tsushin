@@ -1,6 +1,6 @@
 # ねこねこ通信（Astro）
 
-日記、分析、翻訳、研究、小説、系譜ノートをまとめて扱う個人サイトです。
+日記、分析、翻訳、研究、小説をまとめて扱う個人サイトです。
 `ねこねこ通信` と `ねこねこ研究所` を同じ Astro プロジェクト内で運用しています。
 
 ## 開発コマンド
@@ -20,7 +20,6 @@
 - `src/content/translation`: 翻訳
 - `src/content/research`: 研究ノート
 - `src/content/novel`: 小説・創作
-- `src/content/genealogy`: 系譜ノート
 
 共通 frontmatter のスキーマは `src/content/config.ts` で定義しています。
 
@@ -75,7 +74,6 @@
 - `src/data/music-board.json`
 - `src/data/study-board.json`
 - `src/data/novel-board.json`
-- `src/data/genealogy-board.json`
 - `src/data/literature-philosophy-board.json`
 
 用途が増えたら、対応ページ側の参照箇所も合わせて更新します。

@@ -1,0 +1,60 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { getCollection } from "astro:content";
+import BandList, { type BandItem } from "../../components/BandList.astro";
+import { getContentSummary } from "../../utils/content";
+
+const BASE = import.meta.env.BASE_URL.endsWith("/")
+  ? import.meta.env.BASE_URL
+  : import.meta.env.BASE_URL + "/";
+
+const [translationItems, researchItems, novelItems] = await Promise.all([
+  getCollection("translation", ({ data }) => !data.draft && !data.studySeries),
+  getCollection("research", ({ data }) => !data.draft && !data.studySeries),
+  getCollection("novel", ({ data }) => !data.draft && !data.studySeries),
+]);
+
+const items: BandItem[] = [
+  ...translationItems.map((item) => ({
+    href: `${BASE}translation/${item.slug}`,
+    title: item.data.title,
+    date: item.data.date,
+    summary: getContentSummary(item.data.summary, item.body ?? ""),
+    label: "翻訳",
+  })),
+  ...researchItems.map((item) => ({
+    href: `${BASE}research/${item.slug}`,
+    title: item.data.title,
+    date: item.data.date,
+    summary: getContentSummary(item.data.summary, item.body ?? ""),
+    label: "研究",
+  })),
+  ...novelItems.map((item) => ({
+    href: `${BASE}novel/${item.slug}`,
+    title: item.data.title,
+    date: item.data.date,
+    summary: getContentSummary(item.data.summary, item.body ?? ""),
+    label: "小説",
+  })),
+].sort((a, b) => {
+  if (a.date !== b.date) return a.date < b.date ? 1 : -1;
+  return a.href < b.href ? 1 : -1;
+});
+---
+<BaseLayout title="物置 | ねこねこ研究所">
+  <section class="pageWrap">
+    <BandList
+      items={items}
+      title="物置"
+      showLabel={true}
+      emptyText="まだ物置に置かれたテクストはありません。"
+    />
+  </section>
+</BaseLayout>
+
+<style>
+  .pageWrap {
+    width: min(100%, 940px);
+    margin-inline: auto;
+  }
+</style>
