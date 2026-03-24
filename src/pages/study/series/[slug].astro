@@ -34,8 +34,20 @@ const [translationItems, researchItems, novelItems] = await Promise.all([
   getCollection("research", ({ data }) => !data.draft && data.studySeries === seriesSlug),
   getCollection("novel", ({ data }) => !data.draft && data.studySeries === seriesSlug),
 ]);
+const concept = (
+  await getCollection("studyConcepts", ({ data }) => !data.draft && data.seriesSlug === seriesSlug)
+)[0];
 
 const items = [
+  ...(concept
+    ? [{
+        href: `${BASE}study/concepts/${concept.slug}`,
+        title: concept.data.title,
+        date: "",
+        summary: concept.data.summary ?? "",
+        label: "構想書",
+      }]
+    : []),
   ...translationItems.map((item) => ({
     href: `${BASE}study/${item.slug}`,
     title: item.data.title,
@@ -58,12 +70,15 @@ const items = [
     label: "小説",
   })),
 ].sort((a, b) => {
+  if (!a.date && !b.date) return a.href < b.href ? 1 : -1;
+  if (!a.date) return -1;
+  if (!b.date) return 1;
   if (a.date !== b.date) return a.date < b.date ? 1 : -1;
   return a.href < b.href ? 1 : -1;
 });
 
 const thumb = thumbSrc(series.thumbnail);
-const seriesCount = items.length + 1;
+const seriesCount = items.length;
 ---
 <BaseLayout title={`${series.title} | ねこねこ研究所`}>
   <section class="seriesPage">
@@ -81,26 +96,6 @@ const seriesCount = items.length + 1;
       </div>
     </header>
 
-    <section class="conceptBlock" aria-labelledby="concept-title">
-      <div class="entryTop conceptTop">
-        <span class="entryLabel">構想書 / セリー</span>
-      </div>
-      <h2 id="concept-title" class="conceptTitle">{series.concept.title}</h2>
-      <p class="conceptSummary">{series.concept.summary}</p>
-      <div class="conceptBody">
-        {series.concept.body.map((line) => (
-          <p>{line}</p>
-        ))}
-      </div>
-      {series.concept.plans?.length ? (
-        <ul class="conceptPlan">
-          {series.concept.plans.map((plan) => (
-            <li>{plan}</li>
-          ))}
-        </ul>
-      ) : null}
-    </section>
-
     {items.length ? (
       <ul class="entryList">
         {items.map((item) => (
@@ -108,7 +103,7 @@ const seriesCount = items.length + 1;
             <a class="entryCard" href={item.href}>
               <div class="entryTop">
                 <span class="entryLabel">{item.label} / セリー</span>
-                <span class="entryDate mono">{item.date}</span>
+                {item.date ? <span class="entryDate mono">{item.date}</span> : null}
               </div>
               <strong class="entryTitle">{item.title}</strong>
               {item.summary ? <p class="entrySummary">{item.summary}</p> : null}
@@ -117,7 +112,7 @@ const seriesCount = items.length + 1;
         ))}
       </ul>
     ) : (
-      <p class="emptyText">構想書以外の公開セリーはまだありません。</p>
+      <p class="emptyText">この研究シリーズにはまだ公開セリーがありません。</p>
     )}
   </section>
 </BaseLayout>
@@ -194,53 +189,6 @@ const seriesCount = items.length + 1;
     font-size: 0.68rem;
     color: var(--muted);
     opacity: 0.8;
-  }
-
-  .conceptBlock {
-    display: grid;
-    gap: 8px;
-    padding: 0 0 16px;
-    border-bottom: 1px dotted var(--line);
-  }
-
-  .conceptTop {
-    justify-content: flex-start;
-    margin-bottom: 0;
-  }
-
-  .conceptTitle {
-    margin: 0;
-    font-size: 1rem;
-    line-height: 1.4;
-    font-weight: 400;
-  }
-
-  .conceptSummary {
-    margin: 0;
-    font-size: 0.86rem;
-    line-height: 1.6;
-    color: var(--muted);
-  }
-
-  .conceptBody {
-    display: grid;
-    gap: 8px;
-  }
-
-  .conceptBody p {
-    margin: 0;
-    font-size: 0.9rem;
-    line-height: 1.7;
-  }
-
-  .conceptPlan {
-    margin: 2px 0 0;
-    padding-left: 1.2rem;
-    display: grid;
-    gap: 4px;
-    color: var(--muted);
-    font-size: 0.84rem;
-    line-height: 1.6;
   }
 
   .entryList {

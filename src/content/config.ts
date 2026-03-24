@@ -42,9 +42,21 @@ const novel = defineCollection({
   schema: entrySchema,
 });
 
+const studyConcepts = defineCollection({
+  type: "content",
+  schema: z.object({
+    title: z.string(),
+    summary: z.string().max(200).optional(),
+    seriesSlug: z.string().min(1),
+    plans: z.array(z.string()).default([]),
+    draft: z.boolean().default(false),
+  }),
+});
+
 export const collections = {
   posts: post,
   translation,
   research,
   novel,
+  studyConcepts,
 };
