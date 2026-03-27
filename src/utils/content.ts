@@ -9,13 +9,16 @@ export function getContentSummary(summary: string | undefined, markdown: string,
 
   if (!lines.length) return "";
 
+  function shouldSkip(line: string) {
+    return /^#{1,6}\s+/.test(line);
+  }
+
   function normalize(line: string) {
     return line
       .replace(/&(?:emsp|ensp|nbsp|thinsp);/gi, " ")
       .replace(/!\[[^\]]*]\([^)]*\)/g, " ")
       .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
       .replace(/`([^`]*)`/g, "$1")
-      .replace(/^#+\s*/, "")
       .replace(/^>\s*/, "")
       .replace(/[*_~]/g, "")
       .replace(/^[\s\u3000]+/, "")
@@ -26,6 +29,8 @@ export function getContentSummary(summary: string | undefined, markdown: string,
   const collected: string[] = [];
 
   for (const line of lines) {
+    if (shouldSkip(line)) continue;
+
     const normalized = normalize(line);
     if (!normalized) continue;
     collected.push(normalized);

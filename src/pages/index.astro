@@ -153,6 +153,8 @@ const crossMonthDots =
         0
       )
     : 0;
+
+const leadPostIndex = timelineWithGap.findIndex(({ item }) => item.kind === "post");
 ---
 <BaseLayout title="ねこねこ通信">
   <div class="homeGrid">
@@ -160,7 +162,7 @@ const crossMonthDots =
       <section class="homeSection">
         {timelineWithGap.length ? (
           <ul class="postGrid">
-            {timelineWithGap.map(({ item, gapDots, showBead }) => {
+            {timelineWithGap.map(({ item, gapDots, showBead }, index) => {
               return (
               <li class="cardItem" style={`--dot-count:${gapDots};`}>
                 {gapDots > 0 ? (
@@ -176,7 +178,7 @@ const crossMonthDots =
                   </span>
                 ) : null}
                 {item.kind === "post" ? (
-                  <a class="postCard" href={item.href}>
+                  <a class:list={["postCard", { isLeadPost: index === leadPostIndex }]} href={item.href}>
                     {item.thumbnail ? (
                       <div class="thumbFrame">
                         <img class="thumb post-thumb-wide" src={thumbSrc(item.thumbnail)} alt="" loading="lazy" />
@@ -402,7 +404,7 @@ const crossMonthDots =
     }
 
     .postCard {
-      --thumb-width: 256px;
+      --thumb-width: clamp(236px, 33vw, 320px);
       display: grid;
       grid-template-columns: var(--thumb-width) minmax(0, 1fr);
       gap: 16px;
@@ -415,6 +417,12 @@ const crossMonthDots =
 
     .postCard:hover {
       opacity: 0.82;
+    }
+
+    .postCard.isLeadPost {
+      --thumb-width: 100%;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 8px;
     }
 
     .thumbFrame {
@@ -442,6 +450,12 @@ const crossMonthDots =
       max-height: calc(var(--thumb-width) * 5 / 8);
       min-height: calc(var(--thumb-width) * 5 / 8);
       overflow: hidden;
+    }
+
+    .postCard.isLeadPost .cardBody {
+      height: auto;
+      max-height: none;
+      min-height: 0;
     }
 
     .title {
@@ -559,7 +573,7 @@ const crossMonthDots =
       }
 
       .postCard {
-        --thumb-width: 208px;
+        --thumb-width: clamp(208px, 36vw, 248px);
         gap: 10px;
       }
 
@@ -581,9 +595,20 @@ const crossMonthDots =
       }
 
       .postCard {
-        --thumb-width: 184px;
-        gap: 10px;
+        --thumb-width: 100%;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 8px;
         padding: 9px 10px 10px;
+      }
+
+      .cardBody {
+        height: auto;
+        max-height: none;
+        min-height: 0;
+      }
+
+      .summary {
+        -webkit-line-clamp: 3;
       }
 
       .categoryLine {

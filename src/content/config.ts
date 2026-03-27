@@ -53,10 +53,22 @@ const studyConcepts = defineCollection({
   }),
 });
 
+const art = defineCollection({
+  type: "content",
+  schema: z.object({
+    title: z.string().optional(),
+    caption: z.string().min(1),
+    image: z.string().min(1),
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+    draft: z.boolean().default(false),
+  }),
+});
+
 export const collections = {
   posts: post,
   translation,
   research,
   novel,
   studyConcepts,
+  art,
 };

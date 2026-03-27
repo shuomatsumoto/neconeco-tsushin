@@ -1,0 +1,132 @@
+---
+import { getCollection } from "astro:content";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+const BASE = import.meta.env.BASE_URL.endsWith("/")
+  ? import.meta.env.BASE_URL
+  : import.meta.env.BASE_URL + "/";
+
+function imageSrc(raw: string) {
+  if (raw.startsWith("http://") || raw.startsWith("https://")) return raw;
+  if (raw.startsWith("/")) return `${BASE}${raw.slice(1)}`;
+  return `${BASE}${raw.replace(/^\/+/, "")}`;
+}
+
+const works = (await getCollection("art", ({ data }) => !data.draft)).sort((a, b) => {
+  const ad = a.data.date ?? "";
+  const bd = b.data.date ?? "";
+  return ad < bd ? 1 : -1;
+});
+---
+<BaseLayout title="ねこねこ美術室 | ねこねこ通信">
+  <section class="galleryPage">
+    <header class="galleryHead">
+      <h2 class="h2" style="margin:0;">ねこねこ美術室</h2>
+      <p class="small headSub">画像とキャプションを置いていく、自作作品の展示室です。</p>
+    </header>
+
+    <div class="hr"></div>
+
+    {works.length ? (
+      <section class="galleryGrid" aria-label="展示作品">
+        {works.map((work) => (
+          <figure class="artCard">
+            <img class="artImage" src={imageSrc(work.data.image)} alt={work.data.title ?? work.data.caption} loading="lazy" />
+            <figcaption class="artCaption">
+              {work.data.title ? <strong class="artTitle">{work.data.title}</strong> : null}
+              <p class="captionText">{work.data.caption}</p>
+              {work.data.date ? <p class="artDate mono">{work.data.date}</p> : null}
+            </figcaption>
+          </figure>
+        ))}
+      </section>
+    ) : (
+      <section class="emptyState" aria-label="展示準備中">
+        <p class="emptyLead">まだ作品はありません。</p>
+        <p class="emptyBody">
+          `src/content/art/` に Markdown を追加し、frontmatter に `image` と `caption` を書くとここに展示されます。
+        </p>
+      </section>
+    )}
+  </section>
+</BaseLayout>
+
+<style>
+  .galleryPage { width: min(100%, 1080px); margin-inline: auto; display: grid; gap: 14px; }
+  .galleryHead { display: grid; gap: 4px; }
+  .headSub { margin: 0; color: var(--muted); opacity: 0.8; }
+
+  .galleryGrid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+    align-items: start;
+  }
+
+  .artCard {
+    margin: 0;
+    display: grid;
+    gap: 8px;
+  }
+
+  .artImage {
+    display: block;
+    width: 100%;
+    height: auto;
+    background: #f5f0e7;
+    border: 1px solid rgba(64, 54, 40, 0.14);
+  }
+
+  .artCaption {
+    margin: 0;
+    display: grid;
+    gap: 4px;
+  }
+
+  .artTitle {
+    margin: 0;
+    font-size: 0.96rem;
+    line-height: 1.35;
+    font-weight: 500;
+  }
+
+  .captionText {
+    margin: 0;
+    font-size: 0.9rem;
+    line-height: 1.7;
+    color: var(--muted);
+  }
+
+  .artDate {
+    margin: 0;
+    font-size: 0.72rem;
+    color: var(--muted);
+    opacity: 0.8;
+  }
+
+  .emptyState {
+    border: 1px solid rgba(64, 54, 40, 0.14);
+    background: #fcfaf6;
+    padding: 14px 16px;
+    display: grid;
+    gap: 6px;
+  }
+
+  .emptyLead,
+  .emptyBody {
+    margin: 0;
+  }
+
+  .emptyBody {
+    color: var(--muted);
+    line-height: 1.7;
+    white-space: pre-wrap;
+  }
+
+  @media (max-width: 760px) {
+    .galleryGrid {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 16px;
+    }
+  }
+</style>
