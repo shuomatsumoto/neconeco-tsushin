@@ -4,15 +4,27 @@ const BASE = import.meta.env.BASE_URL.endsWith("/")
   : import.meta.env.BASE_URL + "/";
 const currentPath = Astro.url.pathname;
 const studyRoot = `${BASE}study`;
+const artRoot = `${BASE}art`;
 const isLab =
   currentPath.startsWith(studyRoot) ||
   currentPath.startsWith(`${BASE}translation`) ||
   currentPath.startsWith(`${BASE}research`) ||
   currentPath.startsWith(`${BASE}novel`);
-const titleIconSrc = `${BASE}images/deco/${isLab ? "neco2.png" : "neco.png"}`;
-const searchAction = `${BASE}${isLab ? "study/search" : "search"}`;
-const searchLabel = isLab ? "研究所内の検索" : "記事と日記の検索";
-const searchPlaceholder = isLab ? "研究所を検索" : "記事や日記を検索";
+const isArt = currentPath.startsWith(artRoot);
+const section = isArt ? "art" : isLab ? "lab" : "comm";
+const titleIconSrc = `${BASE}images/deco/${
+  section === "lab" ? "neco2.png" : section === "art" ? "neco3.png" : "neco.png"
+}`;
+const homeHref = section === "lab" ? studyRoot : section === "art" ? artRoot : BASE;
+const siteTitle = section === "lab" ? "ねこねこ研究所" : section === "art" ? "ねこねこ美術室" : "ねこねこ通信";
+const searchAction = `${BASE}${section === "lab" ? "study/search" : "search"}`;
+const searchLabel = section === "lab" ? "研究所内の検索" : "記事と日記の検索";
+const searchPlaceholder = section === "lab" ? "研究所を検索" : "記事や日記を検索";
+const sectionLinks = [
+  { href: BASE, label: "ねこねこ通信へ", icon: "🗞️", active: section === "comm" },
+  { href: studyRoot, label: "ねこねこ研究所へ", icon: "🧪", active: section === "lab" },
+  { href: artRoot, label: "ねこねこ美術室へ", icon: "🖼️", active: section === "art" },
+];
 const commNavItems = [
   { href: `${BASE}all`, label: "記事", icon: "🗂️" },
   { href: `${BASE}category`, label: "カテゴリ", icon: "🏷️" },
@@ -24,47 +36,66 @@ const commNavItems = [
   <div class="headerTop">
     <div class="headerLeft">
       <div class="headerControls">
-        <button
-          id="searchFab"
-          class="searchFab"
-          type="button"
-          aria-label="search"
-          aria-expanded="false"
-        >
-          🔍
-        </button>
-
-        <a
-          href={isLab ? BASE : studyRoot}
-          class="labLink"
-          aria-label={isLab ? "ねこねこ通信へ" : "ねこねこ研究所へ"}
-        >
-          {isLab ? "✉️" : "🧪"}
-        </a>
+        {sectionLinks.map((item) => (
+          <a
+            href={item.href}
+            class={`sectionLink${item.active ? " isCurrent" : ""}`}
+            aria-label={item.label}
+            title={item.label}
+            aria-current={item.active ? "page" : undefined}
+          >
+            {item.icon}
+          </a>
+        ))}
       </div>
     </div>
 
     <h1 class="siteTitle" style="margin:0;">
-      <a href={isLab ? studyRoot : BASE} class={`siteTitleLink${isLab ? " isLab" : ""}`}>
+      <a href={homeHref} class={`siteTitleLink${section === "lab" ? " isLab" : ""}`}>
         <img
           id="siteTitleIcon"
           src={titleIconSrc}
           alt=""
           class="siteTitleIcon"
         />
-        <span>{isLab ? "ねこねこ研究所" : "ねこねこ通信"}</span>
+        <span>{siteTitle}</span>
       </a>
     </h1>
 
-    {!isLab ? (
-      <nav class="headerQuickNav" aria-label="ねこねこ通信の主要リンク">
-        {commNavItems.map((item) => (
-          <a href={item.href} class="headerQuickLink" aria-label={item.label} data-label={item.label}>
-            <span class="headerQuickIcon" aria-hidden="true">{item.icon}</span>
-          </a>
-        ))}
-      </nav>
-    ) : null}
+    <div class="headerRight">
+      {section === "comm" ? (
+        <nav class="headerQuickNav" aria-label="ねこねこ通信の主要リンク">
+          {commNavItems.map((item) => (
+            <a href={item.href} class="headerQuickLink" aria-label={item.label} data-label={item.label}>
+              <span class="headerQuickIcon" aria-hidden="true">{item.icon}</span>
+            </a>
+          ))}
+          <button
+            id="searchFab"
+            class="headerQuickButton"
+            type="button"
+            aria-label="検索"
+            data-label="検索"
+            aria-expanded="false"
+          >
+            <span class="headerQuickIcon" aria-hidden="true">🔍</span>
+          </button>
+        </nav>
+      ) : (
+        <div class="headerUtility">
+          <button
+            id="searchFab"
+            class="headerQuickButton"
+            type="button"
+            aria-label="検索"
+            data-label="検索"
+            aria-expanded="false"
+          >
+            <span class="headerQuickIcon" aria-hidden="true">🔍</span>
+          </button>
+        </div>
+      )}
+    </div>
   </div>
 
   <form
@@ -116,7 +147,7 @@ const commNavItems = [
       object-position: center;
     }
 
-    .labLink {
+    .sectionLink {
       width: 24px;
       height: 24px;
       cursor: pointer;
@@ -126,6 +157,16 @@ const commNavItems = [
       padding: 0;
       line-height: 1;
       text-decoration: none;
+      opacity: 0.82;
+    }
+
+    .sectionLink:hover {
+      opacity: 1;
+    }
+
+    .sectionLink.isCurrent {
+      opacity: 1;
+      filter: saturate(1.1);
     }
 
     .headerControls {
@@ -151,9 +192,15 @@ const commNavItems = [
       gap: 8px;
     }
 
-    .headerQuickNav {
+    .headerRight {
       grid-column: 3;
       justify-self: end;
+      display: flex;
+      align-items: center;
+      min-width: 0;
+    }
+
+    .headerQuickNav {
       display: flex;
       flex-wrap: wrap;
       justify-content: flex-end;
@@ -173,11 +220,13 @@ const commNavItems = [
       line-height: 1.2;
     }
 
-    .headerQuickLink:hover {
+    .headerQuickLink:hover,
+    .headerQuickButton:hover {
       opacity: 0.78;
     }
 
-    .headerQuickLink::after {
+    .headerQuickLink::after,
+    .headerQuickButton::after {
       content: attr(data-label);
       position: absolute;
       top: calc(100% + 6px);
@@ -197,9 +246,26 @@ const commNavItems = [
     }
 
     .headerQuickLink:hover::after,
-    .headerQuickLink:focus-visible::after {
+    .headerQuickLink:focus-visible::after,
+    .headerQuickButton:hover::after,
+    .headerQuickButton:focus-visible::after {
       opacity: 1;
       transform: translateY(0);
+    }
+
+    .headerQuickButton {
+      position: relative;
+      display: inline-grid;
+      place-items: center;
+      width: 24px;
+      height: 24px;
+      color: var(--muted);
+      text-decoration: none;
+      line-height: 1.2;
+      border: 0;
+      background: transparent;
+      cursor: pointer;
+      padding: 0;
     }
 
     .headerQuickIcon {
@@ -248,17 +314,10 @@ const commNavItems = [
       outline: none;
     }
 
-    .searchFab {
-      width: 24px;
-      height: 24px;
-      border: 0;
-      background: transparent;
-      cursor: pointer;
-      display: grid;
-      place-items: center;
-      font-size: 16px;
-      padding: 0;
-      line-height: 1;
+    .headerUtility {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
     }
 
     @media (max-width: 700px) {
@@ -298,9 +357,13 @@ const commNavItems = [
         justify-content: flex-start;
       }
 
-      .headerQuickNav {
+      .headerRight {
         grid-column: 1;
         justify-self: center;
+      }
+
+      .headerQuickNav,
+      .headerUtility {
         justify-content: center;
         gap: 8px 16px;
       }
@@ -312,7 +375,9 @@ const commNavItems = [
       }
 
       .headerQuickLink:hover::after,
-      .headerQuickLink:focus-visible::after {
+      .headerQuickLink:focus-visible::after,
+      .headerQuickButton:hover::after,
+      .headerQuickButton:focus-visible::after {
         transform: translate(-50%, 0);
       }
 
