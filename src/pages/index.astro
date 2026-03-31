@@ -155,11 +155,31 @@ const crossMonthDots =
     : 0;
 
 const leadPostIndex = timelineWithGap.findIndex(({ item }) => item.kind === "post");
+const clientTimelineSource = {
+  posts: posts.map((post) => ({
+    date: post.data.date,
+    href: `${BASE}posts/${post.slug}`,
+    title: post.data.title,
+    summary: getContentSummary(post.data.summary, post.body ?? ""),
+    thumbnail: thumbSrc(post.data.thumbnail) ?? "",
+    category: post.data.category ?? "",
+    series: post.data.series ?? "",
+    tags: post.data.tags ?? [],
+  })),
+  board: board
+    .filter((item) => isYmd(item.date))
+    .map((item) => ({
+      date: item.date ?? "",
+      comment: item.comment ?? item.title ?? "",
+      href: item.href ?? "",
+    })),
+};
+const serializedTimelineSource = JSON.stringify(clientTimelineSource).replace(/</g, "\\u003c");
 ---
 <BaseLayout title="ねこねこ通信">
   <div class="homeGrid">
     <main class="homeCol">
-      <section class="homeSection">
+      <section class="homeSection" id="homeTimeline">
         {timelineWithGap.length ? (
           <ul class="postGrid">
             {timelineWithGap.map(({ item, gapDots, showBead }, index) => {
@@ -632,6 +652,163 @@ const leadPostIndex = timelineWithGap.findIndex(({ item }) => item.kind === "pos
       });
     }
 
+    function renderHomeTimeline() {
+      const root = document.getElementById("homeTimeline");
+      if (!(root instanceof HTMLElement)) return;
+
+      const source = JSON.parse('{serializedTimelineSource}');
+
+      function isYmd(value) {
+        return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
+      }
+
+      function getTokyoYmd() {
+        return new Intl.DateTimeFormat("en-CA", {
+          timeZone: "Asia/Tokyo",
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+        }).format(new Date());
+      }
+
+      function toDayNumber(value) {
+        return Math.floor(Date.parse(`${value}T00:00:00+09:00`) / 86400000);
+      }
+
+      function shiftMonth(value, delta) {
+        const base = new Date(`${value}-01T00:00:00+09:00`);
+        base.setMonth(base.getMonth() + delta);
+        const year = base.getFullYear();
+        const month = String(base.getMonth() + 1).padStart(2, "0");
+        return `${year}-${month}`;
+      }
+
+      function formatShortDate(value) {
+        const [, month, day] = value.split("-");
+        return `${Number(month)}/${Number(day)}`;
+      }
+
+      function formatMonthLabel(value) {
+        const [, month] = value.split("-");
+        return `${Number(month)}月分を表示`;
+      }
+
+      function escapeHtml(value) {
+        return String(value)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
+      function buildTimeline(month, todayYmd, todayMonth) {
+        const monthPosts = month
+          ? source.posts
+              .filter((post) => post.date.startsWith(month))
+              .map((post) => ({ kind: "post", ...post }))
+          : [];
+        const monthBoardItems = month
+          ? source.board
+              .filter((item) => isYmd(item.date) && item.date.startsWith(month))
+              .map((item) => ({ kind: "board", ...item }))
+          : [];
+
+        const items = [...monthPosts, ...monthBoardItems];
+
+        if (month === todayMonth && !items.some((item) => item.date === todayYmd)) {
+          items.push({ kind: "todayMarker", date: todayYmd });
+        }
+
+        return items
+          .sort((a, b) => {
+            if (a.date !== b.date) return a.date < b.date ? 1 : -1;
+            if (a.kind === b.kind) return 0;
+            if (a.kind === "todayMarker") return -1;
+            if (b.kind === "todayMarker") return 1;
+            return a.kind === "board" ? -1 : 1;
+          })
+          .map((item, index, sorted) => {
+            if (index === 0) return { item, gapDots: 0, showBead: true };
+            const previousItem = sorted[index - 1];
+            const diff = Math.max(toDayNumber(previousItem.date) - toDayNumber(item.date), 0);
+            return { item, gapDots: diff, showBead: previousItem.date !== item.date };
+          });
+      }
+
+      function renderDots(count) {
+        if (count <= 0) return "";
+        return `<span class="dotTrail" aria-hidden="true">${Array.from({ length: count }, () => '<span class="trailDot"></span>').join("")}</span>`;
+      }
+
+      function renderItem(entry, index, leadPostIndex) {
+        const { item, gapDots, showBead } = entry;
+        const bead = showBead
+          ? `<span class="timeBead mono">${formatShortDate(item.date)}</span>`
+          : "";
+
+        let body = "";
+        if (item.kind === "post") {
+          body = `
+            <a class="postCard${index === leadPostIndex ? " isLeadPost" : ""}" href="${escapeHtml(item.href)}">
+              ${item.thumbnail ? `<div class="thumbFrame"><img class="thumb post-thumb-wide" src="${escapeHtml(item.thumbnail)}" alt="" loading="lazy" /></div>` : ""}
+              <div class="cardBody">
+                <strong class="title post-title-2line">${escapeHtml(item.title)}</strong>
+                <div class="summaryWrap">
+                  <p class="summary js-summary">${escapeHtml(item.summary)}</p>
+                </div>
+                <div class="cardFooter">
+                  <div class="metaStack">
+                    ${item.series ? `<p class="seriesLine post-series-accent">〈${escapeHtml(item.series)}〉</p>` : ""}
+                    ${item.category ? `<p class="categoryLine"><span class="category">${escapeHtml(item.category)}</span></p>` : ""}
+                  </div>
+                </div>
+              </div>
+            </a>`;
+        } else if (item.kind === "board") {
+          body = item.href
+            ? `<div class="boardCard"><a class="boardComment" href="${escapeHtml(item.href)}">${escapeHtml(item.comment)}</a></div>`
+            : `<div class="boardCard"><p class="boardComment">${escapeHtml(item.comment)}</p></div>`;
+        } else {
+          body = `<div class="todayMarkerCard" aria-label="今日"><p class="todayMarkerText">今日はまだ記事がありません。</p></div>`;
+        }
+
+        return `<li class="cardItem" style="--dot-count:${gapDots};">${renderDots(gapDots)}${bead}${body}</li>`;
+      }
+
+      const todayYmd = getTokyoYmd();
+      const todayMonth = todayYmd.slice(0, 7);
+      const latestPostMonth = source.posts.map((post) => post.date.slice(0, 7)).sort((a, b) => (a < b ? 1 : -1))[0] ?? "";
+      const latestBoardMonth = source.board.map((item) => item.date.slice(0, 7)).sort((a, b) => (a < b ? 1 : -1))[0] ?? "";
+      const latestMonth = [todayMonth, latestPostMonth, latestBoardMonth]
+        .filter(Boolean)
+        .sort((a, b) => (a < b ? 1 : -1))[0] ?? "";
+
+      const currentTimeline = buildTimeline(latestMonth, todayYmd, todayMonth);
+      const previousMonth = latestMonth ? shiftMonth(latestMonth, -1) : "";
+      const previousTimeline = previousMonth ? buildTimeline(previousMonth, todayYmd, todayMonth) : [];
+      const crossMonthDots =
+        currentTimeline.length && previousTimeline.length
+          ? Math.max(
+              toDayNumber(currentTimeline[currentTimeline.length - 1].item.date) -
+                toDayNumber(previousTimeline[0].item.date),
+              0
+            )
+          : 0;
+      const leadPostIndex = currentTimeline.findIndex((entry) => entry.item.kind === "post");
+
+      root.innerHTML = `
+        ${currentTimeline.length ? `<ul class="postGrid">${currentTimeline.map((entry, index) => renderItem(entry, index, leadPostIndex)).join("")}</ul>` : ""}
+        ${previousTimeline.length ? `
+          <details class="olderMonths">
+            <summary class="olderMonthsButton">${formatMonthLabel(previousMonth)}</summary>
+            ${crossMonthDots > 0 ? `<div class="monthBridge" style="--dot-count:${crossMonthDots};" aria-hidden="true">${renderDots(crossMonthDots)}</div>` : ""}
+            <ul class="postGrid olderMonthsList">${previousTimeline.map((entry) => renderItem(entry, -1, -1)).join("")}</ul>
+          </details>` : ""}
+      `;
+    }
+
+    renderHomeTimeline();
     fitHomeSummaries();
     window.addEventListener("resize", fitHomeSummaries);
   </script>

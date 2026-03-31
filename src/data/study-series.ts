@@ -17,7 +17,7 @@ export const studySeriesList: StudySeriesMeta[] = [
     thumbnail: "/images/thumbs/purple.jpg",
     startedAt: "2026-03-23",
     nextUpdate: "2026-04-20",
-    status: "on-going",
+    status: "ongoing",
   },
 ];
 
