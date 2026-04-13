@@ -3,7 +3,6 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 import { getCollection } from "astro:content";
 import { createHash } from "node:crypto";
 import LockGate from "../../components/LockGate.astro";
-import { studySeriesMap } from "../../data/study-series";
 
 const BASE = import.meta.env.BASE_URL.endsWith("/")
   ? import.meta.env.BASE_URL
@@ -34,19 +33,12 @@ const hasInfoCard = Boolean(
   item.data.sourceUrl ||
   item.data.sourceNote
 );
-const studyUnit = item.data.studySeries ? studySeriesMap.get(item.data.studySeries) : undefined;
 ---
 <BaseLayout title={`${item.data.title} | 翻訳 | ねこねこ通信`}>
   <article class="plainArticle">
     <div class="articleMeta">
       <span class="small mono">{item.data.date}</span>
-      {item.data.tags?.length ? <span class="small tags">#{item.data.tags.join(" #")}</span> : null}
     </div>
-    {studyUnit ? (
-      <p class="studyUnitLine">
-        <a href={`${BASE}study/series/${studyUnit.slug}`}>{studyUnit.title}</a>
-      </p>
-    ) : null}
     <h1 class="h1">{item.data.title}</h1>
     {item.data.summary ? <p class="summaryLead">{item.data.summary}</p> : null}
     {hasInfoCard ? (
@@ -115,24 +107,6 @@ const studyUnit = item.data.studySeries ? studySeriesMap.get(item.data.studySeri
     color: var(--muted);
     margin-bottom: 8px;
   }
-
-  .tags { opacity: 0.76; }
-
-  .studyUnitLine {
-    margin: 0 0 8px;
-    font-size: 0.8rem;
-    color: var(--muted);
-  }
-
-  .studyUnitLine a {
-    color: inherit;
-    text-decoration: none;
-  }
-
-  .studyUnitLine a:hover {
-    opacity: 0.78;
-  }
-
   .plainArticle .h1 {
     font-size: clamp(1.45rem, 2.7vw, 1.82rem);
     line-height: 1.38;

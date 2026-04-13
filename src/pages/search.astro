@@ -12,15 +12,9 @@ type Row = {
   title: string;
   summary: string;
   date: string;
-  tags: string[];
-  meta: string;
   typeLabel: string;
   sortKey: string;
 };
-
-function safeTags(tags: unknown): string[] {
-  return Array.isArray(tags) ? tags.filter((t) => typeof t === "string") : [];
-}
 
 function isNotePost(data: { kind?: string }) {
   return data.kind === "note";
@@ -34,8 +28,6 @@ const rows: Row[] = [
     title: p.data.title,
     summary: getContentSummary(p.data.summary, p.body ?? ""),
     date: p.data.date,
-    tags: safeTags(p.data.tags),
-    meta: [p.data.category ?? "", p.data.series ?? ""].filter(Boolean).join(" "),
     typeLabel: isNotePost(p.data) ? "日記" : "記事",
     sortKey: `posts:${p.slug}`,
   })),
@@ -63,8 +55,6 @@ const rows: Row[] = [
           class="resultItem"
           data-title={r.title}
           data-summary={r.summary}
-          data-tags={r.tags.join(" ")}
-          data-meta={r.meta}
           data-type={r.typeLabel}
         >
           <a class="resultRow" href={r.href}>
@@ -74,7 +64,6 @@ const rows: Row[] = [
             </span>
             <span class="rowMeta">
               <span class="rowType">{r.typeLabel}</span>
-              {r.tags.length ? <span class="rowTags">#{r.tags.join(" #")}</span> : null}
             </span>
           </a>
         </li>
@@ -91,10 +80,8 @@ const rows: Row[] = [
     function hit(li, query) {
       const title = (li.dataset.title || "").toLowerCase();
       const summary = (li.dataset.summary || "").toLowerCase();
-      const tags = (li.dataset.tags || "").toLowerCase();
-      const meta = (li.dataset.meta || "").toLowerCase();
       const type = (li.dataset.type || "").toLowerCase();
-      return !query || title.includes(query) || summary.includes(query) || tags.includes(query) || meta.includes(query) || type.includes(query);
+      return !query || title.includes(query) || summary.includes(query) || type.includes(query);
     }
 
     const items = Array.from(list.querySelectorAll(".resultItem"));
@@ -143,7 +130,6 @@ const rows: Row[] = [
       font-size: 0.78rem;
     }
     .rowType { color: #4d5f42; font-weight: 600; white-space: nowrap; }
-    .rowTags { opacity: 0.72; }
     @media (max-width: 640px) {
       .resultRow { flex-direction: column; gap: 4px; }
       .rowMeta { justify-content: flex-start; }

@@ -7,8 +7,6 @@ export type HomeLatestItem = {
   label?: string;
   isPost: boolean;
   thumbnail?: string;
-  category?: string;
-  series?: string;
 };
 
 const {
@@ -41,9 +39,6 @@ function thumbSrc(raw?: string) {
   return `${BASE}${raw.replace(/^\/+/, "")}`;
 }
 
-function postMetaLabel(item: HomeLatestItem) {
-  return [item.category, item.series ? `〈${item.series}〉` : ""].filter(Boolean).join(" ");
-}
 ---
 <section class="homeLatest">
   {showTitle ? (
@@ -63,7 +58,6 @@ function postMetaLabel(item: HomeLatestItem) {
             <div class="postMain">
               <strong class="featuredTitle post-title-2line">{featured.title}</strong>
               <p class="postMeta">
-                {postMetaLabel(featured) ? <span class="postLabel">{postMetaLabel(featured)}</span> : null}
                 <span class="mono postDate">{featured.date}</span>
               </p>
               {featured.summary ? <p class="featuredSummary post-summary-2line">{featured.summary}</p> : null}
@@ -97,7 +91,6 @@ function postMetaLabel(item: HomeLatestItem) {
             <div class="postMain">
               <strong class="postTitle post-title-2line">{item.title}</strong>
               <p class="postMeta">
-                {postMetaLabel(item) ? <span class="postLabel">{postMetaLabel(item)}</span> : null}
                 <span class="mono postDate">{item.date}</span>
               </p>
               {item.summary ? <p class="postSummary post-summary-2line">{item.summary}</p> : null}
@@ -211,8 +204,8 @@ function postMetaLabel(item: HomeLatestItem) {
 
   .postRow {
     display: grid;
-    grid-template-columns: 120px 1fr;
-    gap: 10px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
     text-decoration: none;
     color: var(--ink);
     padding: 9px 0;
@@ -225,8 +218,8 @@ function postMetaLabel(item: HomeLatestItem) {
 
   .thumb {
     margin: 0;
-    min-height: 80px;
-    height: 100%;
+    width: 100%;
+    height: auto;
     object-fit: cover;
   }
 
@@ -301,11 +294,6 @@ function postMetaLabel(item: HomeLatestItem) {
   }
 
   @media (max-width: 700px) {
-    .postRow {
-      grid-template-columns: 96px 1fr;
-      gap: 8px;
-    }
-
     .bandRow {
       grid-template-columns: 1fr;
       gap: 2px;

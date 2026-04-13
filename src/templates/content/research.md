@@ -2,10 +2,7 @@
 title: "研究ノートタイトル"
 date: "2026-02-19"
 kind: "note"
-tags: ["研究"]
 summary: "研究ノートの概要を1文で。"
-category: "研究"
-series: "研究ノート"
 draft: true
 locked: false
 # lockPasscode: "必要な場合のみ設定"

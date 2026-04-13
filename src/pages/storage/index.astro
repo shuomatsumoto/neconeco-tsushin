@@ -9,9 +9,9 @@ const BASE = import.meta.env.BASE_URL.endsWith("/")
   : import.meta.env.BASE_URL + "/";
 
 const [translationItems, researchItems, novelItems] = await Promise.all([
-  getCollection("translation", ({ data }) => !data.draft && !data.studySeries),
-  getCollection("research", ({ data }) => !data.draft && !data.studySeries),
-  getCollection("novel", ({ data }) => !data.draft && !data.studySeries),
+  getCollection("translation", ({ data }) => !data.draft),
+  getCollection("research", ({ data }) => !data.draft),
+  getCollection("novel", ({ data }) => !data.draft),
 ]);
 
 const items: BandItem[] = [
@@ -41,11 +41,11 @@ const items: BandItem[] = [
   return a.href < b.href ? 1 : -1;
 });
 ---
-<BaseLayout title="物置 | ねこねこ研究所">
+<BaseLayout title="ねこねこ物置 | ねこねこ通信">
   <section class="pageWrap">
     <BandList
       items={items}
-      title="物置"
+      title="ねこねこ物置"
       showLabel={true}
       emptyText="まだ物置に置かれたテクストはありません。"
     />

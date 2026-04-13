@@ -1,8 +1,6 @@
 ---
 title: "デリダの翻訳"
 date: "2026-02-13"
-category: "創作"
-tags: ["デリダ"]
 thumbnail: "/images/thumbs/derridacat.jpg"
 draft: true
 ---

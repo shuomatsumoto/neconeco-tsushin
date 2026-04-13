@@ -33,23 +33,15 @@ function thumbSrc(raw?: string) {
     {shown.map((p) => {
       const summary = getContentSummary(p.data.summary, p.body ?? "");
       const t = thumbSrc((p.data as any).thumbnail as string | undefined);
-      const tags = p.data.tags ?? [];
 
       return (
         <li>
-          <a class="postCard" data-category={p.data.category} href={`${BASE}posts/${p.slug}`}>
+          <a class="postCard" href={`${BASE}posts/${p.slug}`}>
             {t ? <img class="thumb post-thumb-wide" src={t} alt="" loading="lazy" /> : null}
             <div class="cardBody">
               <strong class="title post-title-2line">{p.data.title}</strong>
               <p class="date mono">{p.data.date}</p>
               {summary ? <p class="summary post-summary-2line">{summary}</p> : null}
-              <div class="metaStack">
-                {p.data.series ? <p class="seriesLine post-series-accent">〈{p.data.series}〉</p> : null}
-                <div class="postMeta">
-                  {p.data.category ? <span class="category">{p.data.category}</span> : null}
-                  {tags.length ? <span class="tags">#{tags.join(" #")}</span> : null}
-                </div>
-              </div>
             </div>
           </a>
         </li>
@@ -80,8 +72,8 @@ function thumbSrc(raw?: string) {
 
   .postCard {
     display: grid;
-    grid-template-columns: 120px minmax(0, 1fr);
-    gap: 12px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
     padding: 10px 0 12px;
     border-bottom: 1px dotted var(--line);
     text-decoration: none;
@@ -90,8 +82,8 @@ function thumbSrc(raw?: string) {
 
   .thumb {
     aspect-ratio: 8 / 5;
-    min-height: 80px;
-    height: 100%;
+    width: 100%;
+    height: auto;
     margin: 0;
     border: 0;
   }
@@ -107,18 +99,6 @@ function thumbSrc(raw?: string) {
     align-content: start;
     padding: 0;
   }
-
-  .postMeta {
-    display: flex;
-    justify-content: flex-start;
-    flex-wrap: wrap;
-    gap: var(--space-2);
-    align-items: baseline;
-    font-size: var(--fs-list-meta);
-    color: var(--muted);
-    font-style: normal;
-  }
-
   .title {
     display: block;
     font-size: 0.92rem;
@@ -143,55 +123,9 @@ function thumbSrc(raw?: string) {
     white-space: nowrap;
   }
 
-  .seriesLine {
-    margin: 0;
-    font-size: 0.76rem;
-    line-height: 1.2;
-  }
-
-  .metaStack {
-    margin-top: 10px !important;
-    padding-top: 0;
-    display: grid;
-    gap: 0;
-  }
-
-  .summary + .metaStack,
-  .title + .metaStack {
-    margin-top: 10px !important;
-  }
-
-  .category {
-    display: inline-flex;
-    gap: 4px;
-    align-items: center;
-    min-width: 0;
-    color: var(--muted);
-  }
-
-  .tags {
-    margin: 0;
-    color: var(--muted);
-    opacity: 0.62;
-    line-height: 1.4;
-  }
-
-  @media (max-width: 760px) {
-    .postCard {
-      grid-template-columns: 96px minmax(0, 1fr);
-      gap: 8px;
-    }
-  }
-
   @media (max-width: 640px) {
     .postCard {
-      grid-template-columns: 96px minmax(0, 1fr);
-      gap: 8px;
       padding: 9px 0;
-    }
-
-    .thumb {
-      min-height: 72px;
     }
   }
 </style>

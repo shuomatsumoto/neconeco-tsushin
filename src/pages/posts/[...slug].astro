@@ -68,31 +68,7 @@ function thumbSrc(raw?: string) {
       </div>
     ) : null}
     <div class="articleMeta">
-      {post.data.series ? (
-        <a href={`${BASE}series/${encodeURIComponent(post.data.series)}`} class="seriesLink">
-          〈{post.data.series}〉
-        </a>
-      ) : null}
-
       <div class="metaLine">
-        {post.data.category ? (
-          <a href={`${BASE}category/${encodeURIComponent(post.data.category)}`} class="categoryLink">
-            {post.data.category}
-          </a>
-        ) : null}
-
-        {post.data.tags?.length
-          ? (
-              <span class="small tags">
-                {post.data.tags.map((t) => (
-                  <>
-                    <a href={`${BASE}tags/${encodeURIComponent(t)}`} class="tagLink">#{t}</a>{" "}
-                  </>
-                ))}
-              </span>
-            )
-          : null}
-
         <span class="small mono dateText">{post.data.date} / {characterCountLabel}</span>
       </div>
     </div>
@@ -234,42 +210,6 @@ function thumbSrc(raw?: string) {
     gap: 8px;
     align-items: baseline;
     flex-wrap: wrap;
-  }
-
-  .categoryLink {
-    text-decoration: none;
-    color: var(--muted);
-  }
-
-  .categoryLink:hover {
-    opacity: 0.75;
-  }
-
-  .seriesLink {
-    text-decoration: none;
-    color: #4d5f42;
-    font-weight: 700;
-    font-size: 0.86rem;
-    line-height: 1.25;
-  }
-
-  .seriesLink:hover {
-    opacity: 0.82;
-  }
-
-  .tags {
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-  }
-
-  .tagLink {
-    text-decoration: none;
-    color: var(--muted);
-  }
-
-  .tagLink:hover {
-    opacity: 0.75;
   }
 
   .dateText {

@@ -1,7 +1,6 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { getCollection } from "astro:content";
-import { toYMD } from "../../components/category";
 import board from "../../data/board.json";
 import memorials from "../../data/memorials.json";
 
@@ -78,16 +77,11 @@ const memorialItems = memorials.filter((m) => m.date === ymd || m.date === mmdd)
           <li>
             <a class="postRow" href={`${BASE}posts/${p.slug}`}>
               <span class="left">
-                {p.data.category ? <span class="category">{p.data.category}</span> : null}
-                {p.data.category ? <span class="sep">｜</span> : null}
                 <strong class="title">{p.data.title}</strong>
               </span>
 
               <span class="right">
-                <span class="date">{toYMD(p.data.date)}</span>
-                {p.data.tags?.length && (
-                  <span class="tags">#{p.data.tags.join(" #")}</span>
-                )}
+                <span class="date">{p.data.date}</span>
               </span>
             </a>
           </li>
@@ -182,20 +176,6 @@ const memorialItems = memorials.filter((m) => m.date === ymd || m.date === mmdd)
       color: var(--muted);
       white-space: nowrap;
     }
-
-    .category {
-      font-size: 0.85em;
-      color: var(--muted);
-    }
-
-    .sep {
-      color: var(--muted);
-    }
-
-    .tags {
-      color: var(--muted);
-    }
-
     .metaBlock {
       margin-top: 12px;
       display: grid;

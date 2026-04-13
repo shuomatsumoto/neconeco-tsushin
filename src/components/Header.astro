@@ -9,27 +9,25 @@ const isLab =
   currentPath.startsWith(studyRoot) ||
   currentPath.startsWith(`${BASE}translation`) ||
   currentPath.startsWith(`${BASE}research`) ||
-  currentPath.startsWith(`${BASE}novel`);
+  currentPath.startsWith(`${BASE}novel`) ||
+  currentPath.startsWith(`${BASE}storage`);
 const isArt = currentPath.startsWith(artRoot);
 const section = isArt ? "art" : isLab ? "lab" : "comm";
 const titleIconSrc = `${BASE}images/deco/${
   section === "lab" ? "neco2.png" : section === "art" ? "neco3.png" : "neco.png"
 }`;
-const homeHref = section === "lab" ? studyRoot : section === "art" ? artRoot : BASE;
-const siteTitle = section === "lab" ? "ねこねこ研究所" : section === "art" ? "ねこねこ美術室" : "ねこねこ通信";
-const searchAction = `${BASE}${section === "lab" ? "study/search" : "search"}`;
-const searchLabel = section === "lab" ? "研究所内の検索" : "記事と日記の検索";
-const searchPlaceholder = section === "lab" ? "研究所を検索" : "記事や日記を検索";
+const homeHref = section === "lab" ? `${BASE}storage` : section === "art" ? artRoot : BASE;
+const siteTitle = section === "lab" ? "ねこねこ物置" : section === "art" ? "ねこねこ美術室" : "ねこねこ通信";
+const searchAction = `${BASE}search`;
+const searchLabel = "記事と日記の検索";
+const searchPlaceholder = "記事や日記を検索";
 const sectionLinks = [
   { href: BASE, label: "ねこねこ通信へ", icon: "🗞️", active: section === "comm" },
-  { href: studyRoot, label: "ねこねこ研究所へ", icon: "🧪", active: section === "lab" },
+  { href: `${BASE}storage`, label: "ねこねこ物置へ", icon: "🧪", active: section === "lab" },
   { href: artRoot, label: "ねこねこ美術室へ", icon: "🖼️", active: section === "art" },
 ];
 const commNavItems = [
   { href: `${BASE}all`, label: "記事", icon: "🗂️" },
-  { href: `${BASE}category`, label: "カテゴリ", icon: "🏷️" },
-  { href: `${BASE}series`, label: "連載", icon: "🪡" },
-  { href: `${BASE}tags`, label: "タグ", icon: "#" },
 ];
 ---
 <header class="siteHeader">

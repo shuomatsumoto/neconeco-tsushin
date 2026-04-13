@@ -1,7 +1,6 @@
 ---
 title: "「間にある不純物、わたしはそれも好きだ」"
 date: "2026-02-17"
-tags: ["対訳", "ドイツ語"]
 summary: "Yoko Tawada ist Meisterin im Spiel mit der Sprache. Ein Gespräch über die Unwägbarkeit der Worte und warum man sich Identität erarbeiten muss."
 translationAuthor: "松本朱央"
 originalAuthor: "原著者名"
