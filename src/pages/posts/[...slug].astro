@@ -43,13 +43,10 @@ function thumbSrc(raw?: string) {
 ---
 <BaseLayout title={`${displayTitle} | ねこねこ通信`}>
   <article class="plainArticle">
-    <div class="articleMeta">
-      <div class="metaLine">
-        <span class="small mono dateText">{post.data.date}</span>
-      </div>
-    </div>
-
-    <h1 class="h1">{displayTitle}</h1>
+    <header class="articleHeader">
+      <h1 class="articleTitle">{displayTitle}</h1>
+      <p class="articleDate mono">{post.data.date}</p>
+    </header>
 
     <LockGate
       locked={post.data.locked}
@@ -102,7 +99,44 @@ function thumbSrc(raw?: string) {
     margin-inline: auto;
   }
 
-.prose :global(p) {
+  .articleHeader {
+    padding: 18px 0 0;
+    margin: 0;
+  }
+
+  .articleTitle {
+    margin: 0;
+    font-size: clamp(1.38rem, 2.9vw, 1.86rem);
+    line-height: 1.28;
+    color: var(--accent);
+    font-family:
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      "Hiragino Sans",
+      "Yu Gothic",
+      "Noto Sans JP",
+      sans-serif;
+    font-weight: 400;
+  }
+
+  .articleDate {
+    margin: 6px 0 4px;
+    color: var(--accent);
+    font-size: 0.88rem;
+    font-family:
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      "Hiragino Sans",
+      "Yu Gothic",
+      "Noto Sans JP",
+      sans-serif;
+    font-weight: 400;
+    white-space: nowrap;
+  }
+
+  .prose :global(p) {
     margin: 0 0 1.05em;
     font-size: 1rem;
   }
@@ -131,31 +165,6 @@ function thumbSrc(raw?: string) {
     border-left: 3px solid var(--line);
     background: rgba(255,255,255,0.35);
     border-radius: 10px;
-  }
-
-  .articleMeta {
-    display: grid;
-    gap: 6px;
-    font-size: 0.78rem;
-    color: var(--muted);
-    margin-bottom: 8px;
-  }
-
-  .metaLine {
-    display: flex;
-    gap: 8px;
-    align-items: baseline;
-    flex-wrap: wrap;
-  }
-
-  .dateText {
-    opacity: 0.78;
-  }
-
-  .plainArticle .h1 {
-    font-size: clamp(1.45rem, 2.7vw, 1.82rem);
-    line-height: 1.38;
-    margin: 0 0 16px;
   }
 
   .supportBox {
