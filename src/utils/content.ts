@@ -44,3 +44,8 @@ export function getContentSummary(summary: string | undefined, markdown: string,
   if (plain.length <= maxLength) return plain;
   return `${plain.slice(0, maxLength).trimEnd()}…`;
 }
+
+export function getDisplayTitle(title: string | undefined, fallback: string): string {
+  const trimmed = title?.trim();
+  return trimmed ? trimmed : fallback;
+}

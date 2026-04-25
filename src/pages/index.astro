@@ -1,80 +1,15 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { getCollection } from "astro:content";
-import { getContentSummary } from "../utils/content";
+import LockGate from "../components/LockGate.astro";
 import board from "../data/board.json";
+import { getDisplayTitle } from "../utils/content";
 
-function isNoteLike(data: { kind?: string }) {
-  return data.kind === "note";
-}
-
-const postsAll = await getCollection(
-  "posts",
-  ({ data }) => !data.draft && !isNoteLike(data)
-);
-const posts = postsAll.sort((a, b) => (a.data.date < b.data.date ? 1 : -1));
-
-const BASE = import.meta.env.BASE_URL.endsWith("/")
-  ? import.meta.env.BASE_URL
-  : import.meta.env.BASE_URL + "/";
-const latestPost = posts[0];
-const todayYmd = new Intl.DateTimeFormat("en-CA", {
-  timeZone: "Asia/Tokyo",
-  year: "numeric",
-  month: "2-digit",
-  day: "2-digit",
-}).format(new Date());
-const todayMonth = todayYmd.slice(0, 7);
-
-function thumbSrc(raw?: string) {
-  if (!raw) return null;
-  if (raw.startsWith("http://") || raw.startsWith("https://")) return raw;
-  if (raw.startsWith("/")) return `${BASE}${raw.slice(1)}`;
-  return `${BASE}${raw.replace(/^\/+/, "")}`;
-}
-
-function isYmd(value: string | undefined) {
-  return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
-}
-
-function formatShortDate(value: string) {
-  const [, month, day] = value.split("-");
-  return `${Number(month)}/${Number(day)}`;
-}
-
-function toDayNumber(value: string) {
-  return Math.floor(Date.parse(`${value}T00:00:00+09:00`) / 86400000);
-}
-
-function shiftMonth(value: string, delta: number) {
-  const base = new Date(`${value}-01T00:00:00+09:00`);
-  base.setMonth(base.getMonth() + delta);
-  const year = base.getFullYear();
-  const month = String(base.getMonth() + 1).padStart(2, "0");
-  return `${year}-${month}`;
-}
-
-function formatMonthLabel(value: string) {
-  const [, month] = value.split("-");
-  return `${Number(month)}月分を表示`;
-}
-
-function getTimelineMonths() {
-  const months = new Set<string>();
-
-  if (todayMonth) months.add(todayMonth);
-  if (latestPost?.data.date) months.add(latestPost.data.date.slice(0, 7));
-
-  posts.forEach((post) => {
-    if (post.data.date) months.add(post.data.date.slice(0, 7));
-  });
-
-  board.forEach((item) => {
-    if (isYmd(item.date)) months.add(item.date.slice(0, 7));
-  });
-
-  return Array.from(months).sort((a, b) => (a < b ? 1 : -1));
-}
+type BoardEntry = {
+  date: string;
+  comment: string;
+  href?: string;
+};
 
 type TimelineItem =
   | {
@@ -96,27 +31,132 @@ type TimelineItem =
       date: string;
     };
 
-function buildTimeline(month: string) {
-  const monthPosts = month
-    ? posts.filter((post) => post.data.date.startsWith(month))
-    : [];
+type TimelineEntry = {
+  item: TimelineItem;
+  gapDots: number;
+  showBead: boolean;
+};
+
+type TimelineMonthSection = {
+  month: string;
+  label: string;
+  timeline: TimelineEntry[];
+  crossMonthDots: number;
+};
+
+type MonthArchiveEntry = {
+  month: string;
+  label: string;
+  href: string;
+  count: number;
+};
+
+function isNoteLike(data: { kind?: string }): boolean {
+  return data.kind === "note";
+}
+
+async function sha256Hex(text: string): Promise<string> {
+  const bytes = new TextEncoder().encode(text);
+  const digest = await globalThis.crypto.subtle.digest("SHA-256", bytes);
+  return Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+const BASE = import.meta.env.BASE_URL.endsWith("/")
+  ? import.meta.env.BASE_URL
+  : import.meta.env.BASE_URL + "/";
+const todayYmd = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "Asia/Tokyo",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+}).format(new Date());
+const todayMonth = todayYmd.slice(0, 7);
+const boardEntries = board as BoardEntry[];
+
+const postsAll = await getCollection(
+  "posts",
+  ({ data }) => !data.draft && !isNoteLike(data)
+);
+const posts = postsAll.sort((a, b) => (a.data.date < b.data.date ? 1 : -1));
+const latestPosts = await Promise.all(
+  posts
+    .filter((post) => {
+      const postDate = new Date(`${post.data.date}T00:00:00+09:00`);
+      return postDate >= new Date(Date.now() - 30 * 86400000);
+    })
+    .map(async (post) => {
+      const { Content } = await post.render();
+      const homeMore = String(post.body ?? "").includes("data-home-more");
+      const lockHash = post.data.lockPasscode
+        ? await sha256Hex(post.data.lockPasscode)
+        : "";
+      return {
+        slug: post.slug,
+        title: getDisplayTitle(post.data.title, post.data.date),
+        date: post.data.date,
+        Content,
+        homeMore,
+        lockHash,
+        locked: !!post.data.locked,
+        storageKey: `posts/${post.slug}`,
+      };
+    })
+);
+
+function thumbSrc(raw?: string | null): string | null {
+  if (!raw) return null;
+  if (raw.startsWith("http://") || raw.startsWith("https://")) return raw;
+  if (raw.startsWith("/")) return `${BASE}${raw.slice(1)}`;
+  return `${BASE}${raw.replace(/^\/+/, "")}`;
+}
+
+function isYmd(value: string | undefined): value is string {
+  return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
+}
+
+function formatShortDate(value: string): string {
+  const [, month, day] = value.split("-");
+  return `${Number(month)}/${Number(day)}`;
+}
+
+function toDayNumber(value: string): number {
+  return Math.floor(Date.parse(`${value}T00:00:00+09:00`) / 86400000);
+}
+
+function formatMonthLabel(value: string): string {
+  const [, month] = value.split("-");
+  return `${Number(month)}月分を表示`;
+}
+
+function formatArchiveMonthLabel(value: string): string {
+  const [year, month] = value.split("-");
+  return `${Number(year)}年${Number(month)}月`;
+}
+
+function getTimelineMonths(): string[] {
+  const months = new Set<string>();
+
+  if (todayMonth) months.add(todayMonth);
+
+  boardEntries.forEach((item) => {
+    if (isYmd(item.date)) months.add(item.date.slice(0, 7));
+  });
+
+  return Array.from(months).sort((a, b) => (a < b ? 1 : -1));
+}
+
+function buildTimeline(month: string): TimelineEntry[] {
   const monthBoardItems = month
-    ? board.filter((item) => isYmd(item.date) && item.date?.startsWith(month))
+    ? boardEntries.filter((item) => isYmd(item.date) && item.date.startsWith(month))
     : [];
 
   const timelineItems: TimelineItem[] = [
-    ...monthPosts.map((post) => ({
-      kind: "post" as const,
-      date: post.data.date,
-      href: `${BASE}posts/${post.slug}`,
-      title: post.data.title,
-      summary: getContentSummary(post.data.summary, post.body ?? ""),
-      thumbnail: post.data.thumbnail,
-    })),
     ...monthBoardItems.map((item) => ({
       kind: "board" as const,
-      date: item.date ?? "",
-      comment: item.comment ?? item.title ?? "",
+      date: item.date,
+      comment: item.comment,
       href: item.href,
     })),
   ];
@@ -128,77 +168,106 @@ function buildTimeline(month: string) {
     });
   }
 
-  return timelineItems.sort((a, b) => {
-    if (a.date !== b.date) return a.date < b.date ? 1 : -1;
-    if (a.kind === b.kind) return 0;
-    if (a.kind === "todayMarker") return -1;
-    if (b.kind === "todayMarker") return 1;
-    return a.kind === "board" ? -1 : 1;
-  }).map((item, index, items) => {
-    if (index === 0) return { item, gapDots: 0, showBead: true };
+  return timelineItems
+    .sort((a, b) => {
+      if (a.date !== b.date) return a.date < b.date ? 1 : -1;
+      if (a.kind === b.kind) return 0;
+      if (a.kind === "todayMarker") return -1;
+      if (b.kind === "todayMarker") return 1;
+      return a.kind === "board" ? -1 : 1;
+    })
+    .map((item, index, items): TimelineEntry => {
+      if (index === 0) return { item, gapDots: 0, showBead: true };
 
-    const previousItem = items[index - 1];
-    const diff = Math.max(toDayNumber(previousItem.date) - toDayNumber(item.date), 0);
+      const previousItem = items[index - 1];
+      const diff = Math.max(toDayNumber(previousItem.date) - toDayNumber(item.date), 0);
 
-    return { item, gapDots: diff, showBead: previousItem.date !== item.date };
-  });
+      return { item, gapDots: diff, showBead: previousItem.date !== item.date };
+    });
 }
 
 const timelineMonths = getTimelineMonths();
 const latestMonth = timelineMonths[0] ?? "";
-const timelineWithGap = buildTimeline(latestMonth);
-const olderMonthSections = timelineMonths.slice(1).reduce<{
-  month: string;
-  label: string;
-  timeline: ReturnType<typeof buildTimeline>;
-  crossMonthDots: number;
-}[]>((sections, month) => {
-  const timeline = buildTimeline(month);
-  if (!timeline.length) return sections;
+const timelineWithGap: TimelineEntry[] = buildTimeline(latestMonth);
+const olderMonthSections: TimelineMonthSection[] = timelineMonths
+  .slice(1)
+  .reduce<TimelineMonthSection[]>((sections, month: string) => {
+    const timeline = buildTimeline(month);
+    if (!timeline.length) return sections;
 
-  const previousTimeline = sections.at(-1)?.timeline ?? timelineWithGap;
-  const crossMonthDots =
-    previousTimeline.length
-      ? Math.max(
-          toDayNumber(previousTimeline[previousTimeline.length - 1].item.date) -
-            toDayNumber(timeline[0].item.date),
-          0
-        )
-      : 0;
+    const previousTimeline = sections.at(-1)?.timeline ?? timelineWithGap;
+    const crossMonthDots =
+      previousTimeline.length > 0
+        ? Math.max(
+            toDayNumber(previousTimeline[previousTimeline.length - 1].item.date) -
+              toDayNumber(timeline[0].item.date),
+            0
+          )
+        : 0;
 
-  sections.push({
-    month,
-    label: formatMonthLabel(month),
-    timeline,
-    crossMonthDots,
-  });
+    sections.push({
+      month,
+      label: formatMonthLabel(month),
+      timeline,
+      crossMonthDots,
+    });
 
-  return sections;
-}, []);
+    return sections;
+  }, []);
 
-const leadPostIndex = timelineWithGap.findIndex(({ item }) => item.kind === "post");
-const clientTimelineSource = {
-  posts: posts.map((post) => ({
-    date: post.data.date,
-    href: `${BASE}posts/${post.slug}`,
-    title: post.data.title,
-    summary: getContentSummary(post.data.summary, post.body ?? ""),
-    thumbnail: thumbSrc(post.data.thumbnail) ?? "",
-  })),
-  board: board
-    .filter((item) => isYmd(item.date))
-    .map((item) => ({
-      date: item.date ?? "",
-      comment: item.comment ?? item.title ?? "",
-      href: item.href ?? "",
-    })),
-};
-const serializedTimelineSource = JSON.stringify(clientTimelineSource).replace(/</g, "\\u003c");
+const leadPostIndex: number = timelineWithGap.findIndex(({ item }) => item.kind === "post");
+
+const monthArchiveMap = new Map<string, number>();
+for (const post of posts) {
+  const month = post.data.date.slice(0, 7);
+  monthArchiveMap.set(month, (monthArchiveMap.get(month) ?? 0) + 1);
+}
+
+const monthArchiveEntries: MonthArchiveEntry[] = Array.from(monthArchiveMap, ([month, count]) => ({
+  month,
+  label: formatArchiveMonthLabel(month),
+  href: `${BASE}date/month/${month}/`,
+  count,
+}));
 ---
 <BaseLayout title="ねこねこ通信">
   <div class="homeGrid">
     <main class="homeCol">
-      <section class="homeSection" id="homeTimeline">
+      <section class="homeSection" id="homeRecent">
+        <header class="sectionHead">
+        </header>
+        {latestPosts.length ? (
+          <div class="homeRecentList">
+            {latestPosts.map((post) => (
+              <article class="homeRecentArticle">
+                <h2 class="recentTitle">
+                  <a class="recentTitleLink" href={`${BASE}posts/${post.slug}`}>
+                    {post.title}
+                  </a>
+                </h2>
+                <p class="recentDate mono">{post.date}</p>
+                <LockGate locked={post.locked} lockHash={post.lockHash} storageKey={post.storageKey}>
+                  <div class="prose homeArticleBody" data-home-article-body>
+                    <post.Content />
+                  </div>
+                  {post.homeMore ? (
+                    <button class="homeMoreButton" type="button" hidden data-home-more-button>
+                      つづきを表示
+                    </button>
+                  ) : null}
+                </LockGate>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <p class="small">直近30日分の最新記事はありません。</p>
+        )}
+      </section>
+
+      <section class="homeSection" id="homeTimeline" hidden>
+        <p class="pageLead">
+          ここでは　ボードの項目のみを表示しています。
+        </p>
         {timelineWithGap.length ? (
           <ul class="postGrid">
             {timelineWithGap.map(({ item, gapDots, showBead }, index) => {
@@ -307,6 +376,27 @@ const serializedTimelineSource = JSON.stringify(clientTimelineSource).replace(/<
           </details>
         ))}
       </section>
+
+      <section class="homeSection homeArchiveSection" id="homeArchive">
+        <p class="homeArchiveLead small">月ごとの記事一覧です。</p>
+        {monthArchiveEntries.length ? (
+          <ul class="monthArchiveList">
+            {monthArchiveEntries.map((entry) => (
+              <li class="monthArchiveItem">
+                <a class="monthArchiveLink" href={entry.href}>
+                  <span class="monthArchiveLabel">{entry.label}</span>
+                  <span class="monthArchiveCount mono">{entry.count}件</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p class="small">まだ投稿がありません。</p>
+        )}
+        <p class="homeArchiveMore">
+          <a class="homeArchiveMoreLink" href={`${BASE}date/`}>月別の記事一覧をすべて見る</a>
+        </p>
+      </section>
     </main>
   </div>
 
@@ -328,6 +418,123 @@ const serializedTimelineSource = JSON.stringify(clientTimelineSource).replace(/<
     .homeSection {
       padding: 0;
       margin: 0;
+    }
+
+    .homeRecentList {
+      display: grid;
+      gap: 28px;
+      margin-bottom: 26px;
+    }
+
+    .homeRecentArticle {
+      padding: 18px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .homeRecentArticle:last-child {
+      border-bottom: 0;
+    }
+
+    .recentTitle {
+      margin: 0;
+      font-size: clamp(1.38rem, 2.9vw, 1.86rem);
+      line-height: 1.28;
+      color: var(--accent);
+      font-family:
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Hiragino Sans",
+        "Yu Gothic",
+        "Noto Sans JP",
+        sans-serif;
+      font-weight: 400;
+    }
+
+    .recentTitleLink {
+      color: inherit;
+      text-decoration: none;
+      display: inline-block;
+      font: inherit;
+    }
+
+    .recentTitleLink:hover {
+      opacity: 0.84;
+    }
+
+    .recentDate {
+      margin: 6px 0 14px;
+      color: var(--accent);
+      font-size: 0.88rem;
+      font-family:
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Hiragino Sans",
+        "Yu Gothic",
+        "Noto Sans JP",
+        sans-serif;
+      font-weight: 400;
+    }
+
+    .prose :global(p) {
+      margin: 0 0 1.1em;
+      font-size: 1rem;
+      line-height: 1.8;
+    }
+
+    .prose :global(h2),
+    .prose :global(h3),
+    .prose :global(h4),
+    .prose :global(h5),
+    .prose :global(h6) {
+      margin: 1.4em 0 0.6em;
+      font-weight: 500;
+    }
+
+    .prose :global(a) {
+      color: var(--accent);
+      text-decoration: underline;
+    }
+
+    .homeMoreButton {
+      appearance: none;
+      background: transparent;
+      border: 0;
+      padding: 0;
+      margin: 8px 0 0;
+      color: var(--accent);
+      font-size: 0.95rem;
+      line-height: 1.7;
+      cursor: pointer;
+      font-family:
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Hiragino Sans",
+        "Yu Gothic",
+        "Noto Sans JP",
+        sans-serif;
+      font-weight: 400;
+      text-decoration: none;
+    }
+
+    .homeMoreButton:hover {
+      opacity: 0.82;
+    }
+
+    .homeMoreButton:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+      border-radius: 2px;
+    }
+
+    .prose :global(blockquote) {
+      margin: 1.2em 0;
+      padding: 12px 14px;
+      border-left: 3px solid var(--line);
+      background: rgba(255, 255, 255, 0.45);
+      border-radius: 10px;
     }
 
     .postGrid {
@@ -566,6 +773,51 @@ const serializedTimelineSource = JSON.stringify(clientTimelineSource).replace(/<
       opacity: 0.84;
     }
 
+    .homeArchiveSection {
+      margin-top: 10px;
+      padding: 16px 0 4px;
+      border-top: 1px dotted var(--line);
+      display: grid;
+      gap: 8px;
+      justify-items: start;
+    }
+
+    .homeArchiveMore {
+      margin: 0;
+    }
+
+    .homeArchiveMoreLink {
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.94rem;
+      line-height: 1.6;
+    }
+
+    .homeArchiveMoreLink:hover {
+      opacity: 0.82;
+      text-decoration: underline;
+    }
+
+    .homeArchiveLead {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .homeArchiveLink {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+
+    .homeArchiveLink:hover {
+      opacity: 0.82;
+      text-decoration: underline;
+    }
+
     @media (max-width: 900px) {
       .homeGrid {
         gap: 18px;
@@ -622,7 +874,8 @@ const serializedTimelineSource = JSON.stringify(clientTimelineSource).replace(/<
 
     }
   </style>
-  <script>
+  <script is:inline>
+    // @ts-nocheck
     function fitHomeSummaries() {
       document.querySelectorAll(".summaryWrap").forEach((wrap) => {
         const summary = wrap.querySelector(".js-summary");
@@ -634,179 +887,51 @@ const serializedTimelineSource = JSON.stringify(clientTimelineSource).replace(/<
       });
     }
 
-    function renderHomeTimeline() {
-      const root = document.getElementById("homeTimeline");
-      if (!(root instanceof HTMLElement)) return;
+    function enhanceHomeArticles() {
+      document.querySelectorAll("[data-home-article-body]").forEach((body) => {
+        if (!(body instanceof HTMLElement)) return;
+        const container = body.parentElement;
+        if (!(container instanceof HTMLElement)) return;
+        const button = container.querySelector("[data-home-more-button]");
+        if (!(button instanceof HTMLButtonElement)) return;
 
-      const source = JSON.parse('{serializedTimelineSource}');
-
-      function isYmd(value) {
-        return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
-      }
-
-      function getTokyoYmd() {
-        return new Intl.DateTimeFormat("en-CA", {
-          timeZone: "Asia/Tokyo",
-          year: "numeric",
-          month: "2-digit",
-          day: "2-digit",
-        }).format(new Date());
-      }
-
-      function toDayNumber(value) {
-        return Math.floor(Date.parse(`${value}T00:00:00+09:00`) / 86400000);
-      }
-
-      function shiftMonth(value, delta) {
-        const base = new Date(`${value}-01T00:00:00+09:00`);
-        base.setMonth(base.getMonth() + delta);
-        const year = base.getFullYear();
-        const month = String(base.getMonth() + 1).padStart(2, "0");
-        return `${year}-${month}`;
-      }
-
-      function formatShortDate(value) {
-        const [, month, day] = value.split("-");
-        return `${Number(month)}/${Number(day)}`;
-      }
-
-      function formatMonthLabel(value) {
-        const [, month] = value.split("-");
-        return `${Number(month)}月分を表示`;
-      }
-
-      function getTimelineMonths(todayMonth) {
-        const months = new Set();
-        if (todayMonth) months.add(todayMonth);
-        source.posts.forEach((post) => {
-          if (post.date) months.add(post.date.slice(0, 7));
-        });
-        source.board.forEach((item) => {
-          if (item.date) months.add(item.date.slice(0, 7));
-        });
-        return Array.from(months).sort((a, b) => (a < b ? 1 : -1));
-      }
-
-      function escapeHtml(value) {
-        return String(value)
-          .replace(/&/g, "&amp;")
-          .replace(/</g, "&lt;")
-          .replace(/>/g, "&gt;")
-          .replace(/"/g, "&quot;")
-          .replace(/'/g, "&#39;");
-      }
-
-      function buildTimeline(month, todayYmd, todayMonth) {
-        const monthPosts = month
-          ? source.posts
-              .filter((post) => post.date.startsWith(month))
-              .map((post) => ({ kind: "post", ...post }))
-          : [];
-        const monthBoardItems = month
-          ? source.board
-              .filter((item) => isYmd(item.date) && item.date.startsWith(month))
-              .map((item) => ({ kind: "board", ...item }))
-          : [];
-
-        const items = [...monthPosts, ...monthBoardItems];
-
-        if (month === todayMonth && !items.some((item) => item.date === todayYmd)) {
-          items.push({ kind: "todayMarker", date: todayYmd });
+        const marker = body.querySelector("[data-home-more]");
+        if (!(marker instanceof HTMLElement)) {
+          button.remove();
+          return;
         }
 
-        return items
-          .sort((a, b) => {
-            if (a.date !== b.date) return a.date < b.date ? 1 : -1;
-            if (a.kind === b.kind) return 0;
-            if (a.kind === "todayMarker") return -1;
-            if (b.kind === "todayMarker") return 1;
-            return a.kind === "board" ? -1 : 1;
-          })
-          .map((item, index, sorted) => {
-            if (index === 0) return { item, gapDots: 0, showBead: true };
-            const previousItem = sorted[index - 1];
-            const diff = Math.max(toDayNumber(previousItem.date) - toDayNumber(item.date), 0);
-            return { item, gapDots: diff, showBead: previousItem.date !== item.date };
-          });
-      }
+        const more = document.createElement("div");
+        more.className = "homeArticleMore";
+        more.hidden = true;
 
-      function renderDots(count) {
-        if (count <= 0) return "";
-        return `<span class="dotTrail" aria-hidden="true">${Array.from({ length: count }, () => '<span class="trailDot"></span>').join("")}</span>`;
-      }
-
-      function renderItem(entry, index, leadPostIndex) {
-        const { item, gapDots, showBead } = entry;
-        const bead = showBead
-          ? `<span class="timeBead mono">${formatShortDate(item.date)}</span>`
-          : "";
-
-        let body = "";
-        if (item.kind === "post") {
-          body = `
-            <a class="postCard${index === leadPostIndex ? " isLeadPost" : ""}" href="${escapeHtml(item.href)}">
-              ${item.thumbnail ? `<div class="thumbFrame"><img class="thumb post-thumb-wide" src="${escapeHtml(item.thumbnail)}" alt="" loading="lazy" /></div>` : ""}
-              <div class="cardBody">
-                <strong class="title post-title-2line">${escapeHtml(item.title)}</strong>
-                <div class="summaryWrap">
-                  <p class="summary js-summary">${escapeHtml(item.summary)}</p>
-                </div>
-              </div>
-            </a>`;
-        } else if (item.kind === "board") {
-          body = item.href
-            ? `<div class="boardCard"><a class="boardComment" href="${escapeHtml(item.href)}">${escapeHtml(item.comment)}</a></div>`
-            : `<div class="boardCard"><p class="boardComment">${escapeHtml(item.comment)}</p></div>`;
-        } else {
-          body = `<div class="todayMarkerCard" aria-label="今日"><p class="todayMarkerText">今日はまだ記事がありません。</p></div>`;
+        let hasMoreContent = false;
+        let node = marker.nextSibling;
+        while (node) {
+          const next = node.nextSibling;
+          more.appendChild(node);
+          hasMoreContent = true;
+          node = next;
         }
 
-        return `<li class="cardItem" style="--dot-count:${gapDots};">${renderDots(gapDots)}${bead}${body}</li>`;
-      }
+        marker.remove();
 
-      const todayYmd = getTokyoYmd();
-      const todayMonth = todayYmd.slice(0, 7);
-      const timelineMonths = getTimelineMonths(todayMonth);
-      const latestMonth = timelineMonths[0] ?? "";
+        if (!hasMoreContent) {
+          button.remove();
+          return;
+        }
 
-      const currentTimeline = buildTimeline(latestMonth, todayYmd, todayMonth);
-      const olderMonthSections = timelineMonths.slice(1).reduce((sections, month) => {
-        const timeline = buildTimeline(month, todayYmd, todayMonth);
-        if (!timeline.length) return sections;
-
-        const previousTimeline = sections.at(-1)?.timeline ?? currentTimeline;
-        const crossMonthDots =
-          previousTimeline.length
-            ? Math.max(
-                toDayNumber(previousTimeline[previousTimeline.length - 1].item.date) -
-                  toDayNumber(timeline[0].item.date),
-                0
-              )
-            : 0;
-
-        sections.push({
-          month,
-          label: formatMonthLabel(month),
-          timeline,
-          crossMonthDots,
+        body.appendChild(more);
+        button.hidden = false;
+        button.addEventListener("click", () => {
+          more.hidden = false;
+          button.remove();
         });
-        return sections;
-      }, []);
-      const leadPostIndex = currentTimeline.findIndex((entry) => entry.item.kind === "post");
-
-      root.innerHTML = `
-        ${currentTimeline.length ? `<ul class="postGrid">${currentTimeline.map((entry, index) => renderItem(entry, index, leadPostIndex)).join("")}</ul>` : ""}
-        ${olderMonthSections.map(({ month, label, timeline, crossMonthDots }) => `
-          <details class="olderMonths" data-month="${escapeHtml(month)}">
-            <summary class="olderMonthsButton">${escapeHtml(label)}</summary>
-            ${crossMonthDots > 0 ? `<div class="monthBridge" style="--dot-count:${crossMonthDots};" aria-hidden="true">${renderDots(crossMonthDots)}</div>` : ""}
-            <ul class="postGrid olderMonthsList">${timeline.map((entry) => renderItem(entry, -1, -1)).join("")}</ul>
-          </details>`).join("")}
-      `;
+      });
     }
 
-    renderHomeTimeline();
     fitHomeSummaries();
+    enhanceHomeArticles();
     window.addEventListener("resize", fitHomeSummaries);
   </script>
 </BaseLayout>

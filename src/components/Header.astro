@@ -12,107 +12,49 @@ const isLab =
   currentPath.startsWith(`${BASE}novel`) ||
   currentPath.startsWith(`${BASE}storage`);
 const isArt = currentPath.startsWith(artRoot);
-const section = isArt ? "art" : isLab ? "lab" : "comm";
+const section = isLab ? "lab" : "comm";
 const titleIconSrc = `${BASE}images/deco/${
-  section === "lab" ? "neco2.png" : section === "art" ? "neco3.png" : "neco.png"
+  section === "lab" ? "neco2.png" : isArt ? "neco3.png" : "neco.png"
 }`;
-const homeHref = section === "lab" ? `${BASE}storage` : section === "art" ? artRoot : BASE;
-const siteTitle = section === "lab" ? "ねこねこ物置" : section === "art" ? "ねこねこ美術室" : "ねこねこ通信";
-const searchAction = `${BASE}search`;
-const searchLabel = "記事と日記の検索";
-const searchPlaceholder = "記事や日記を検索";
+const homeHref = section === "lab" ? `${BASE}storage` : BASE;
+const siteTitle = section === "lab" ? "ねこねこ物置" : "ねこねこ通信";
 const sectionLinks = [
-  { href: BASE, label: "ねこねこ通信へ", icon: "🗞️", active: section === "comm" },
-  { href: `${BASE}storage`, label: "ねこねこ物置へ", icon: "🧪", active: section === "lab" },
-  { href: artRoot, label: "ねこねこ美術室へ", icon: "🖼️", active: section === "art" },
-];
-const commNavItems = [
-  { href: `${BASE}all`, label: "記事", icon: "🗂️" },
+  { href: BASE, label: "カイエ", active: section === "comm" },
+  { href: `${BASE}storage`, label: "物置", active: section === "lab" },
 ];
 ---
 <header class="siteHeader">
   <div class="headerTop">
     <div class="headerLeft">
-      <div class="headerControls">
+      <nav class="headerControls" aria-label="サイト内メニュー">
         {sectionLinks.map((item) => (
           <a
             href={item.href}
             class={`sectionLink${item.active ? " isCurrent" : ""}`}
-            aria-label={item.label}
-            title={item.label}
             aria-current={item.active ? "page" : undefined}
           >
-            {item.icon}
+            {item.label}
           </a>
         ))}
-      </div>
+      </nav>
     </div>
 
     <h1 class="siteTitle" style="margin:0;">
-      <a href={homeHref} class={`siteTitleLink${section === "lab" ? " isLab" : ""}`}>
+      <a href={homeHref} class={`siteTitleLink${section === "lab" ? " isLab" : ""}`} aria-label={siteTitle}>
         <img
           id="siteTitleIcon"
           src={titleIconSrc}
           alt=""
           class="siteTitleIcon"
         />
-        <span>{siteTitle}</span>
+        <span class="srOnly">{siteTitle}</span>
       </a>
     </h1>
 
     <div class="headerRight">
-      {section === "comm" ? (
-        <nav class="headerQuickNav" aria-label="ねこねこ通信の主要リンク">
-          {commNavItems.map((item) => (
-            <a href={item.href} class="headerQuickLink" aria-label={item.label} data-label={item.label}>
-              <span class="headerQuickIcon" aria-hidden="true">{item.icon}</span>
-            </a>
-          ))}
-          <button
-            id="searchFab"
-            class="headerQuickButton"
-            type="button"
-            aria-label="検索"
-            data-label="検索"
-            aria-expanded="false"
-          >
-            <span class="headerQuickIcon" aria-hidden="true">🔍</span>
-          </button>
-        </nav>
-      ) : (
-        <div class="headerUtility">
-          <button
-            id="searchFab"
-            class="headerQuickButton"
-            type="button"
-            aria-label="検索"
-            data-label="検索"
-            aria-expanded="false"
-          >
-            <span class="headerQuickIcon" aria-hidden="true">🔍</span>
-          </button>
-        </div>
-      )}
+      <div class="headerUtility"></div>
     </div>
   </div>
-
-  <form
-    id="headSearch"
-    class="headSearchPanel"
-    action={searchAction}
-    method="get"
-    role="search"
-    aria-label={searchLabel}
-    data-open="false"
-  >
-    <input
-      id="headSearchInput"
-      class="headSearchInput"
-      type="search"
-      name="q"
-      placeholder={searchPlaceholder}
-    />
-  </form>
 
   <style>
     .siteTitleLink {
@@ -145,33 +87,49 @@ const commNavItems = [
       object-position: center;
     }
 
-    .sectionLink {
-      width: 24px;
-      height: 24px;
-      cursor: pointer;
-      display: grid;
-      place-items: center;
-      font-size: 16px;
+    .srOnly {
+      border: 0;
+      clip: rect(0 0 0 0);
+      clip-path: inset(50%);
+      height: 1px;
+      margin: -1px;
+      overflow: hidden;
       padding: 0;
-      line-height: 1;
+      position: absolute;
+      width: 1px;
+      white-space: nowrap;
+    }
+
+    .sectionLink {
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2px 0;
+      line-height: 1.2;
       text-decoration: none;
+      color: var(--ink);
       opacity: 0.82;
+      letter-spacing: 0.04em;
+      font-size: 0.96rem;
     }
 
     .sectionLink:hover {
       opacity: 1;
+      text-decoration: underline;
+      text-underline-offset: 0.18em;
     }
 
     .sectionLink.isCurrent {
       opacity: 1;
-      filter: saturate(1.1);
+      font-weight: 600;
     }
 
     .headerControls {
       display: flex;
       flex-direction: row;
       align-items: center;
-      gap: 8px;
+      gap: 14px;
       flex-shrink: 0;
     }
 
@@ -272,46 +230,6 @@ const commNavItems = [
       font-size: 1rem;
     }
 
-    .headSearchPanel {
-      position: fixed;
-      top: var(--site-header-bottom, var(--float-panel-top-current, var(--float-panel-top)));
-      left: 50%;
-      transform: translate(-50%, -8px);
-      width: min(940px, calc(100vw - 40px));
-      margin: 0;
-      padding: 8px 14px;
-      background: rgba(252, 249, 242, 0.98);
-      border: 1px solid var(--line);
-      box-shadow: var(--shadow);
-      border-radius: 0 0 12px 12px;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.18s ease, transform 0.18s ease;
-      z-index: 36;
-    }
-
-    .headSearchPanel[data-open="true"] {
-      opacity: 1;
-      pointer-events: auto;
-      transform: translate(-50%, 0);
-    }
-
-    .headSearchInput {
-      width: 100%;
-      height: 36px;
-      border: 0;
-      border-radius: 0;
-      background: transparent;
-      color: var(--ink);
-      padding: 0 8px;
-      font-size: 0.86rem;
-      font-family: inherit;
-    }
-
-    .headSearchInput:focus {
-      outline: none;
-    }
-
     .headerUtility {
       display: flex;
       align-items: center;
@@ -360,17 +278,17 @@ const commNavItems = [
         justify-self: center;
       }
 
-      .headerQuickNav,
-      .headerUtility {
-        justify-content: center;
-        gap: 8px 16px;
-      }
+    .headerQuickNav,
+    .headerUtility {
+      justify-content: center;
+      gap: 8px 16px;
+    }
 
-      .headerQuickLink::after {
-        left: 50%;
-        right: auto;
-        transform: translate(-50%, -2px);
-      }
+    .headerQuickLink::after {
+      left: 50%;
+      right: auto;
+      transform: translate(-50%, -2px);
+    }
 
       .headerQuickLink:hover::after,
       .headerQuickLink:focus-visible::after,
@@ -384,81 +302,4 @@ const commNavItems = [
       }
     }
   </style>
-
-  <script is:inline>
-    (function () {
-      function onReady(fn) {
-        if (document.readyState === "loading") {
-          document.addEventListener("DOMContentLoaded", fn, { once: true });
-        } else {
-          fn();
-        }
-      }
-
-      onReady(function () {
-        var header = document.querySelector(".siteHeader");
-        var btn = document.getElementById("searchFab");
-        var form = document.getElementById("headSearch");
-        var input = document.getElementById("headSearchInput");
-        if (!btn || !form || !input || !header) return;
-
-        function syncPanelTop() {
-          var rect = header.getBoundingClientRect();
-          var top = Math.max(0, Math.ceil(rect.bottom));
-          var topRow = header.querySelector(".headerTop");
-          var topRowBottom = top;
-          if (topRow) {
-            var topRowRect = topRow.getBoundingClientRect();
-            topRowBottom = Math.max(0, Math.ceil(topRowRect.bottom));
-          }
-          document.documentElement.style.setProperty("--site-header-toprow-bottom", topRowBottom + "px");
-          document.documentElement.style.setProperty("--site-header-bottom", top + "px");
-          document.documentElement.style.setProperty("--float-panel-top-current", top + "px");
-        }
-
-        syncPanelTop();
-        window.addEventListener("resize", syncPanelTop);
-        window.addEventListener("scroll", syncPanelTop, { passive: true });
-
-        function setOpen(next) {
-          var prev = form.getAttribute("data-open") === "true";
-          if (prev === next) return;
-          form.setAttribute("data-open", next ? "true" : "false");
-          btn.setAttribute("aria-expanded", next ? "true" : "false");
-          if (next) {
-            window.dispatchEvent(new CustomEvent("floatingPanelOpen", { detail: "search" }));
-            syncPanelTop();
-            setTimeout(function () { input.focus(); }, 80);
-          } else {
-            btn.focus();
-          }
-        }
-
-        btn.addEventListener("click", function () {
-          var open = form.getAttribute("data-open") === "true";
-          setOpen(!open);
-        });
-
-        document.addEventListener("keydown", function (e) {
-          if (e && e.key === "Escape") setOpen(false);
-        });
-
-        document.addEventListener("click", function (e) {
-          var t = e && e.target;
-          if (!t) return;
-          var open = form.getAttribute("data-open") === "true";
-          if (!open) return;
-          if (btn.contains(t)) return;
-          if (form.contains(t)) return;
-          setOpen(false);
-        });
-
-        window.addEventListener("floatingPanelOpen", function (e) {
-          var kind = e && e.detail;
-          if (kind === "search") return;
-          setOpen(false);
-        });
-      });
-    })();
-  </script>
 </header>

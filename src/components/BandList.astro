@@ -1,4 +1,6 @@
 ---
+import { getDisplayTitle } from "../utils/content";
+
 export type BandItem = {
   href: string;
   title: string;
@@ -28,7 +30,8 @@ const {
 
   <ul class="bandList">
     {items.map((item) => {
-      const line = item.summary ? `${item.title} - ${item.summary}` : item.title;
+      const displayTitle = getDisplayTitle(item.title, item.date);
+      const line = item.summary ? `${displayTitle} - ${item.summary}` : displayTitle;
       return (
         <li class="bandItem">
           <a class={`bandRow${showLabel ? " withLabel" : ""}`} href={item.href}>

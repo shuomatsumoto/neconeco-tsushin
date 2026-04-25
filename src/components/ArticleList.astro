@@ -36,14 +36,18 @@ function thumbSrc(raw?: string) {
 
       return (
         <li>
-          <a class="postCard" href={`${BASE}posts/${p.slug}`}>
+          <article class="postCard">
             {t ? <img class="thumb post-thumb-wide" src={t} alt="" loading="lazy" /> : null}
             <div class="cardBody">
-              <strong class="title post-title-2line">{p.data.title}</strong>
+              <h3 class="title">
+                <a class="titleLink post-title-2line" href={`${BASE}posts/${p.slug}`}>
+                  {p.data.title}
+                </a>
+              </h3>
               <p class="date mono">{p.data.date}</p>
               {summary ? <p class="summary post-summary-2line">{summary}</p> : null}
             </div>
-          </a>
+          </article>
         </li>
       );
     })}
@@ -74,9 +78,8 @@ function thumbSrc(raw?: string) {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     gap: 8px;
-    padding: 10px 0 12px;
+    padding: 10px 14px 12px;
     border-bottom: 1px dotted var(--line);
-    text-decoration: none;
     color: var(--ink);
   }
 
@@ -100,11 +103,20 @@ function thumbSrc(raw?: string) {
     padding: 0;
   }
   .title {
-    display: block;
-    font-size: 0.92rem;
-    line-height: 1.35;
+    margin: 0;
+  }
+
+  .titleLink {
+    display: inline-block;
+    font-size: 1.12rem;
+    line-height: 1.32;
     color: var(--ink);
-    font-weight: 400;
+    text-decoration: none;
+    font-weight: 500;
+  }
+
+  .titleLink:hover {
+    opacity: 0.84;
   }
 
   .summary {
@@ -116,8 +128,8 @@ function thumbSrc(raw?: string) {
   }
 
   .date {
-    margin: 0;
-    font-size: 0.68rem;
+    margin: 4px 0 0;
+    font-size: 0.72rem;
     color: var(--muted);
     opacity: 0.78;
     white-space: nowrap;

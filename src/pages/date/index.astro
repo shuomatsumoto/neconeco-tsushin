@@ -1,0 +1,112 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { getCollection } from "astro:content";
+import ListIndexHeader from "../../components/ListIndexHeader.astro";
+
+const BASE = import.meta.env.BASE_URL.endsWith("/")
+  ? import.meta.env.BASE_URL
+  : import.meta.env.BASE_URL + "/";
+
+type MonthArchiveItem = {
+  month: string;
+  label: string;
+  href: string;
+  count: number;
+};
+
+function formatMonthLabel(value: string): string {
+  const [year, month] = value.split("-");
+  return `${Number(year)}年${Number(month)}月`;
+}
+
+const posts = await getCollection("posts", ({ data }) => !data.draft && data.kind !== "note");
+
+const monthCounts = new Map<string, number>();
+for (const post of posts) {
+  const month = post.data.date.slice(0, 7);
+  monthCounts.set(month, (monthCounts.get(month) ?? 0) + 1);
+}
+
+const monthItems: MonthArchiveItem[] = Array.from(monthCounts, ([month, count]) => ({
+  month,
+  label: formatMonthLabel(month),
+  href: `${BASE}date/month/${month}/`,
+  count,
+})).sort((a, b) => (a.month < b.month ? 1 : -1));
+---
+<BaseLayout title="月別の記事一覧 | ねこねこ通信">
+  <section class="pageWrap">
+    <ListIndexHeader title="月別の記事一覧" countLabel={`${monthItems.length}件`} />
+
+    {monthItems.length ? (
+      <ul class="monthArchiveList">
+        {monthItems.map((item) => (
+          <li class="monthArchiveItem">
+            <a class="monthArchiveLink" href={item.href}>
+              <span class="monthArchiveLabel">{item.label}</span>
+              <span class="monthArchiveCount mono">{item.count}件</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    ) : (
+      <p class="small">まだ投稿がありません。</p>
+    )}
+  </section>
+</BaseLayout>
+
+<style>
+  .pageWrap {
+    width: min(100%, 940px);
+    margin-inline: auto;
+    display: grid;
+    gap: 14px;
+  }
+
+  .monthArchiveList {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-top: 1px dotted var(--line);
+  }
+
+  .monthArchiveItem {
+    border-bottom: 1px dotted var(--line);
+  }
+
+  .monthArchiveLink {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 9px 0;
+    text-decoration: none;
+    color: var(--ink);
+  }
+
+  .monthArchiveLink:hover {
+    opacity: 0.84;
+  }
+
+  .monthArchiveLabel {
+    font-size: 0.98rem;
+    line-height: 1.45;
+  }
+
+  .monthArchiveCount {
+    font-size: 0.74rem;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  @media (max-width: 640px) {
+    .monthArchiveLink {
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .monthArchiveCount {
+      align-self: flex-start;
+    }
+  }
+</style>

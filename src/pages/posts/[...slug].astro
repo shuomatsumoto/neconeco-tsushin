@@ -1,12 +1,20 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { getCollection } from "astro:content";
-import { createHash } from "node:crypto";
 import LockGate from "../../components/LockGate.astro";
+import { getDisplayTitle } from "../../utils/content";
 
 const BASE = import.meta.env.BASE_URL.endsWith("/")
   ? import.meta.env.BASE_URL
   : import.meta.env.BASE_URL + "/";
+
+async function sha256Hex(text: string): Promise<string> {
+  const bytes = new TextEncoder().encode(text);
+  const digest = await globalThis.crypto.subtle.digest("SHA-256", bytes);
+  return Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
 
 export async function getStaticPaths() {
   const posts = await getCollection("posts", ({ data }) => !data.draft);
@@ -15,31 +23,9 @@ export async function getStaticPaths() {
 
 const { post } = Astro.props;
 const { Content } = await post.render();
-const lockHash = post.data.lockPasscode
-  ? createHash("sha256").update(post.data.lockPasscode).digest("hex")
-  : "";
+const lockHash = post.data.lockPasscode ? await sha256Hex(post.data.lockPasscode) : "";
 const storageKey = `posts/${post.slug}`;
-
-function countCharacters(markdown: string) {
-  const text = markdown
-    .replace(/```[\s\S]*?```/g, " ")
-    .replace(/`[^`]*`/g, " ")
-    .replace(/!\[[^\]]*]\([^)]*\)/g, " ")
-    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
-    .replace(/^>\s?/gm, "")
-    .replace(/[*_~#>-]/g, "")
-    .replace(/\s+/g, "");
-  return text.length;
-}
-
-function formatApproxCharacters(count: number) {
-  const rounded = count >= 1000
-    ? Math.max(100, Math.round(count / 100) * 100)
-    : Math.max(10, Math.round(count / 10) * 10);
-  return `${rounded.toLocaleString("ja-JP")}字`;
-}
-
-const characterCountLabel = formatApproxCharacters(countCharacters(post.body ?? ""));
+const displayTitle = getDisplayTitle(post.data.title, post.data.date);
 
 function thumbSrc(raw?: string) {
   if (!raw) return null;
@@ -55,25 +41,15 @@ function thumbSrc(raw?: string) {
   return `${BASE}${clean}`;
 }
 ---
-<BaseLayout title={`${post.data.title} | ねこねこ通信`}>
+<BaseLayout title={`${displayTitle} | ねこねこ通信`}>
   <article class="plainArticle">
-    {post.data.thumbnail ? (
-      <div class="heroThumb" aria-hidden="true">
-        <img
-          src={thumbSrc(post.data.thumbnail)}
-          alt=""
-          class="heroImg"
-          loading="lazy"
-        />
-      </div>
-    ) : null}
     <div class="articleMeta">
       <div class="metaLine">
-        <span class="small mono dateText">{post.data.date} / {characterCountLabel}</span>
+        <span class="small mono dateText">{post.data.date}</span>
       </div>
     </div>
 
-    <h1 class="h1">{post.data.title}</h1>
+    <h1 class="h1">{displayTitle}</h1>
 
     <LockGate
       locked={post.data.locked}
@@ -93,7 +69,6 @@ function thumbSrc(raw?: string) {
             action={post.data.supportUrl}
             method="get"
             target="_blank"
-            rel="noopener noreferrer"
           >
             <input type="hidden" name="wanted" value="true" />
             <input type="hidden" name="price" id="supportPrice" value="" />
@@ -116,30 +91,6 @@ function thumbSrc(raw?: string) {
       ) : null}
     </LockGate>
   </article>
-
-  {post.data.supportUrl ? (
-    <script is:inline>
-      (function () {
-        var form = document.getElementById("supportForm");
-        var amount = document.getElementById("supportAmountJpy");
-        var price = document.getElementById("supportPrice");
-        if (!form || !amount || !price) return;
-
-        form.addEventListener("submit", function (e) {
-          var jpy = Math.max(0, Number(amount.value || "0"));
-          if (!jpy) {
-            e.preventDefault();
-            amount.focus();
-            return;
-          }
-          // Gumroad side appears to treat this with a 100x scale mismatch for JPY.
-          // Also apply a 90% factor to offset 10% tax uplift.
-          var adjustedJpy = jpy * 0.9;
-          price.value = (adjustedJpy / 100).toFixed(2);
-        });
-      })();
-    </script>
-  ) : null}
 </BaseLayout>
 
 <style>
@@ -151,22 +102,7 @@ function thumbSrc(raw?: string) {
     margin-inline: auto;
   }
 
-  .heroThumb {
-    margin: 0 0 16px;
-    overflow: hidden;
-    border: none;
-    background: none;
-  }
-
-  .heroImg {
-    display: block;
-    width: auto;
-    max-width: 100%;
-    height: auto; /* 元の縦横比を完全維持 */
-    max-height: clamp(360px, 55vw, 720px);
-  }
-
-  .prose :global(p) {
+.prose :global(p) {
     margin: 0 0 1.05em;
     font-size: 1rem;
   }
@@ -277,10 +213,6 @@ function thumbSrc(raw?: string) {
     font-size: 0.84rem;
     line-height: 1;
     padding: 8px 12px;
-  }
-
-  .supportButton:hover {
-    background: #f8f6f0;
   }
 
   .srOnly {
