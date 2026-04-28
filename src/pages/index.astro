@@ -4,6 +4,10 @@ import { getCollection, type CollectionEntry } from "astro:content";
 import LockGate from "../components/LockGate.astro";
 import { getDisplayTitle } from "../utils/content";
 
+const BASE = import.meta.env.BASE_URL.endsWith("/")
+  ? import.meta.env.BASE_URL
+  : import.meta.env.BASE_URL + "/";
+
 type PostEntry = CollectionEntry<"posts">;
 
 type HomePostItem = {
@@ -147,7 +151,7 @@ const displayPosts = await Promise.all(
             hidden={!post.visible}
           >
             <h2 class="recentTitle">
-              <a class="recentTitleLink" href={`/posts/${post.slug}`}>
+              <a class="recentTitleLink" href={`${BASE}posts/${post.slug}`}>
                 {post.title}
               </a>
             </h2>
@@ -191,7 +195,7 @@ const displayPosts = await Promise.all(
 
   <style>
     .homePage {
-      width: min(100%, 940px);
+      width: min(100%, 1040px);
       margin-inline: auto;
       display: grid;
       gap: 18px;
@@ -259,7 +263,7 @@ const displayPosts = await Promise.all(
 
     .homeRecentList {
       display: grid;
-      width: min(100%, 760px);
+      width: min(100%, 860px);
       margin-inline: auto;
       gap: 28px;
       margin-bottom: 6px;
