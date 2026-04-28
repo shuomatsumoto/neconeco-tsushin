@@ -1,59 +1,30 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
-import { getCollection } from "astro:content";
+import { getCollection, type CollectionEntry } from "astro:content";
 import LockGate from "../components/LockGate.astro";
-import board from "../data/board.json";
 import { getDisplayTitle } from "../utils/content";
 
-type BoardEntry = {
+type PostEntry = CollectionEntry<"posts">;
+
+type HomePostItem = {
+  slug: string;
+  title: string;
   date: string;
-  comment: string;
-  href?: string;
-};
-
-type TimelineItem =
-  | {
-      kind: "post";
-      date: string;
-      href: string;
-      title: string;
-      summary: string;
-      thumbnail?: string;
-    }
-  | {
-      kind: "board";
-      date: string;
-      comment: string;
-      href?: string;
-    }
-  | {
-      kind: "todayMarker";
-      date: string;
-    };
-
-type TimelineEntry = {
-  item: TimelineItem;
-  gapDots: number;
-  showBead: boolean;
-};
-
-type TimelineMonthSection = {
   month: string;
-  label: string;
-  timeline: TimelineEntry[];
-  crossMonthDots: number;
+  searchable: string;
+  visible: boolean;
+  Content: Awaited<ReturnType<PostEntry["render"]>>["Content"];
+  homeMore: boolean;
+  lockHash: string;
+  locked: boolean;
+  storageKey: string;
 };
 
 type MonthArchiveEntry = {
   month: string;
   label: string;
-  href: string;
   count: number;
 };
-
-function isCahierLike(data: { kind?: string }): boolean {
-  return data.kind === "cahier";
-}
 
 async function sha256Hex(text: string): Promise<string> {
   const bytes = new TextEncoder().encode(text);
@@ -63,156 +34,22 @@ async function sha256Hex(text: string): Promise<string> {
     .join("");
 }
 
-const BASE = import.meta.env.BASE_URL.endsWith("/")
-  ? import.meta.env.BASE_URL
-  : import.meta.env.BASE_URL + "/";
-const todayYmd = new Intl.DateTimeFormat("en-CA", {
-  timeZone: "Asia/Tokyo",
-  year: "numeric",
-  month: "2-digit",
-  day: "2-digit",
-}).format(new Date());
-const todayMonth = todayYmd.slice(0, 7);
-const boardEntries = board as BoardEntry[];
-
-const postsAll = await getCollection("posts", ({ data }) => !data.draft && isCahierLike(data));
-const posts = postsAll.sort((a, b) => (a.data.date < b.data.date ? 1 : -1));
-const latestPosts = await Promise.all(
-  posts
-    .filter((post) => {
-      const postDate = new Date(`${post.data.date}T00:00:00+09:00`);
-      return postDate >= new Date(Date.now() - 30 * 86400000);
-    })
-    .map(async (post) => {
-      const { Content } = await post.render();
-      const homeMore = String(post.body ?? "").includes("data-home-more");
-      const lockHash = post.data.lockPasscode
-        ? await sha256Hex(post.data.lockPasscode)
-        : "";
-      return {
-        slug: post.slug,
-        title: getDisplayTitle(post.data.title, post.data.date),
-        date: post.data.date,
-        Content,
-        homeMore,
-        lockHash,
-        locked: !!post.data.locked,
-        storageKey: `posts/${post.slug}`,
-      };
-    })
-);
-
-function thumbSrc(raw?: string | null): string | null {
-  if (!raw) return null;
-  if (raw.startsWith("http://") || raw.startsWith("https://")) return raw;
-  if (raw.startsWith("/")) return `${BASE}${raw.slice(1)}`;
-  return `${BASE}${raw.replace(/^\/+/, "")}`;
-}
-
-function isYmd(value: string | undefined): value is string {
-  return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
-}
-
-function formatShortDate(value: string): string {
-  const [, month, day] = value.split("-");
-  return `${Number(month)}/${Number(day)}`;
-}
-
-function toDayNumber(value: string): number {
-  return Math.floor(Date.parse(`${value}T00:00:00+09:00`) / 86400000);
-}
-
 function formatMonthLabel(value: string): string {
-  const [, month] = value.split("-");
-  return `${Number(month)}月分を表示`;
-}
-
-function formatArchiveMonthLabel(value: string): string {
   const [year, month] = value.split("-");
   return `${Number(year)}年${Number(month)}月`;
 }
 
-function getTimelineMonths(): string[] {
-  const months = new Set<string>();
-
-  if (todayMonth) months.add(todayMonth);
-
-  boardEntries.forEach((item) => {
-    if (isYmd(item.date)) months.add(item.date.slice(0, 7));
-  });
-
-  return Array.from(months).sort((a, b) => (a < b ? 1 : -1));
+function normalizeSearchText(value: string): string {
+  return value.toLowerCase().replace(/\s+/g, " ").trim();
 }
 
-function buildTimeline(month: string): TimelineEntry[] {
-  const monthBoardItems = month
-    ? boardEntries.filter((item) => isYmd(item.date) && item.date.startsWith(month))
-    : [];
-
-  const timelineItems: TimelineItem[] = [
-    ...monthBoardItems.map((item) => ({
-      kind: "board" as const,
-      date: item.date,
-      comment: item.comment,
-      href: item.href,
-    })),
-  ];
-
-  if (month === todayMonth && !timelineItems.some((item) => item.date === todayYmd)) {
-    timelineItems.push({
-      kind: "todayMarker" as const,
-      date: todayYmd,
-    });
-  }
-
-  return timelineItems
-    .sort((a, b) => {
-      if (a.date !== b.date) return a.date < b.date ? 1 : -1;
-      if (a.kind === b.kind) return 0;
-      if (a.kind === "todayMarker") return -1;
-      if (b.kind === "todayMarker") return 1;
-      return a.kind === "board" ? -1 : 1;
-    })
-    .map((item, index, items): TimelineEntry => {
-      if (index === 0) return { item, gapDots: 0, showBead: true };
-
-      const previousItem = items[index - 1];
-      const diff = Math.max(toDayNumber(previousItem.date) - toDayNumber(item.date), 0);
-
-      return { item, gapDots: diff, showBead: previousItem.date !== item.date };
-    });
+function tokenizeSearchQuery(value: string): string[] {
+  return normalizeSearchText(value).split(" ").filter(Boolean);
 }
 
-const timelineMonths = getTimelineMonths();
-const latestMonth = timelineMonths[0] ?? "";
-const timelineWithGap: TimelineEntry[] = buildTimeline(latestMonth);
-const olderMonthSections: TimelineMonthSection[] = timelineMonths
-  .slice(1)
-  .reduce<TimelineMonthSection[]>((sections, month: string) => {
-    const timeline = buildTimeline(month);
-    if (!timeline.length) return sections;
-
-    const previousTimeline = sections.at(-1)?.timeline ?? timelineWithGap;
-    const crossMonthDots =
-      previousTimeline.length > 0
-        ? Math.max(
-            toDayNumber(previousTimeline[previousTimeline.length - 1].item.date) -
-              toDayNumber(timeline[0].item.date),
-            0
-          )
-        : 0;
-
-    sections.push({
-      month,
-      label: formatMonthLabel(month),
-      timeline,
-      crossMonthDots,
-    });
-
-    return sections;
-  }, []);
-
-const leadPostIndex: number = timelineWithGap.findIndex(({ item }) => item.kind === "post");
+const posts = (await getCollection("posts", ({ data }) => !data.draft && data.kind === "cahier")).sort(
+  (a, b) => (a.data.date < b.data.date ? 1 : -1)
+);
 
 const monthArchiveMap = new Map<string, number>();
 for (const post of posts) {
@@ -222,199 +59,202 @@ for (const post of posts) {
 
 const monthArchiveEntries: MonthArchiveEntry[] = Array.from(monthArchiveMap, ([month, count]) => ({
   month,
-  label: formatArchiveMonthLabel(month),
-  href: `${BASE}date/month/${month}/`,
+  label: formatMonthLabel(month),
   count,
-}));
+})).sort((a, b) => (a.month < b.month ? 1 : -1));
+
+const requestedMonth = Astro.url.searchParams.get("month") ?? "";
+const requestedSearch = Astro.url.searchParams.get("search") ?? "";
+const searchQuery = requestedSearch.trim();
+const defaultMonth = monthArchiveEntries[0]?.month ?? "";
+const selectedMonth = monthArchiveEntries.some((entry) => entry.month === requestedMonth)
+  ? requestedMonth
+  : defaultMonth;
+
+const selectedMonthEntry = monthArchiveEntries.find((entry) => entry.month === selectedMonth);
+
+const selectedMonthPosts = posts.filter((post) => post.data.date.slice(0, 7) === selectedMonth);
+
+const searchableText = (post: PostEntry) =>
+  normalizeSearchText(
+    [getDisplayTitle(post.data.title, post.data.date), post.data.title ?? "", post.body ?? "", post.slug].join(" ")
+  );
+
+const searchTerms = tokenizeSearchQuery(searchQuery);
+const initialVisibleSlugs = new Set(
+  searchTerms.length
+    ? posts
+        .filter((post) => {
+          const text = searchableText(post);
+          return searchTerms.every((term) => text.includes(term));
+        })
+        .map((post) => post.slug)
+    : selectedMonthPosts.map((post) => post.slug)
+);
+
+const displayPosts = await Promise.all(
+  posts.map(async (post) => {
+    const { Content } = await post.render();
+    const homeMore = String(post.body ?? "").includes("data-home-more");
+    const lockHash = post.data.lockPasscode ? await sha256Hex(post.data.lockPasscode) : "";
+    const searchable = searchableText(post);
+    const month = post.data.date.slice(0, 7);
+
+    return {
+      slug: post.slug,
+      title: getDisplayTitle(post.data.title, post.data.date),
+      date: post.data.date,
+      month,
+      searchable,
+      visible: initialVisibleSlugs.has(post.slug),
+      Content,
+      homeMore,
+      lockHash,
+      locked: !!post.data.locked,
+      storageKey: `posts/${post.slug}`,
+    } satisfies HomePostItem;
+  })
+);
 ---
 <BaseLayout title="ねこねこ通信">
-  <div class="homeGrid">
-    <main class="homeCol">
-      <section class="homeSection" id="homeRecent">
-        <header class="sectionHead">
-        </header>
-        {latestPosts.length ? (
-          <div class="homeRecentList">
-            {latestPosts.map((post) => (
-              <article class="homeRecentArticle">
-                <h2 class="recentTitle">
-                  <a class="recentTitleLink" href={`${BASE}posts/${post.slug}`}>
-                    {post.title}
-                  </a>
-                </h2>
-                <p class="recentDate mono">{post.date}</p>
-                <LockGate locked={post.locked} lockHash={post.lockHash} storageKey={post.storageKey}>
-                  <div class="prose homeArticleBody" data-home-article-body>
-                    <post.Content />
-                  </div>
-                  {post.homeMore ? (
-                    <button class="homeMoreButton" type="button" hidden data-home-more-button>
-                      つづきを表示
-                    </button>
-                  ) : null}
-                </LockGate>
-              </article>
-            ))}
-          </div>
-        ) : (
-          <p class="small">直近30日分の最新記事はありません。</p>
-        )}
-      </section>
+  <main class="homePage">
+    <section class="homeSection" data-home-root data-selected-month={selectedMonth}>
+      <div class="homeSearch">
+        <input
+          class="homeSearchInput"
+          type="search"
+          name="search"
+          value={searchQuery}
+          placeholder="検索"
+          aria-label="検索"
+          enterkeyhint="search"
+          data-home-search-input
+        />
+      </div>
 
-      <section class="homeSection" id="homeTimeline" hidden>
-        <p class="pageLead">
-          ここでは　ボードの項目のみを表示しています。
-        </p>
-        {timelineWithGap.length ? (
-          <ul class="postGrid">
-            {timelineWithGap.map(({ item, gapDots, showBead }, index) => {
-              return (
-              <li class="cardItem" style={`--dot-count:${gapDots};`}>
-                {gapDots > 0 ? (
-                  <span class="dotTrail" aria-hidden="true">
-                    {Array.from({ length: gapDots }).map(() => (
-                      <span class="trailDot"></span>
-                    ))}
-                  </span>
-                ) : null}
-                {showBead ? (
-                  <span class="timeBead mono">
-                    {formatShortDate(item.date)}
-                  </span>
-                ) : null}
-                {item.kind === "post" ? (
-                  <a class:list={["postCard", { isLeadPost: index === leadPostIndex }]} href={item.href}>
-                    {item.thumbnail ? (
-                      <div class="thumbFrame">
-                        <img class="thumb post-thumb-wide" src={thumbSrc(item.thumbnail)} alt="" loading="lazy" />
-                      </div>
-                    ) : null}
-                    <div class="cardBody">
-                      <strong class="title post-title-2line">{item.title}</strong>
-                      <div class="summaryWrap">
-                        <p class="summary js-summary">{item.summary}</p>
-                      </div>
-                    </div>
-                  </a>
-                ) : item.kind === "board" ? (
-                  <div class="boardCard">
-                    {item.href ? (
-                      <a class="boardComment" href={item.href}>{item.comment}</a>
-                    ) : (
-                      <p class="boardComment">{item.comment}</p>
-                    )}
-                  </div>
-                ) : (
-                  <div class="todayMarkerCard" aria-label="今日">
-                    <p class="todayMarkerText">今日はまだ記事がありません。</p>
-                  </div>
-                )}
-              </li>
-            )})}
-          </ul>
-        ) : null}
-        {olderMonthSections.map(({ month, label, timeline, crossMonthDots }) => (
-          <details class="olderMonths" data-month={month}>
-            <summary class="olderMonthsButton">{label}</summary>
-            {crossMonthDots > 0 ? (
-              <div class="monthBridge" style={`--dot-count:${crossMonthDots};`} aria-hidden="true">
-                <span class="dotTrail">
-                  {Array.from({ length: crossMonthDots }).map(() => (
-                    <span class="trailDot"></span>
-                  ))}
-                </span>
+      <p class="small" data-home-search-empty hidden>
+        「{searchQuery}」に一致するカイエはありません。
+      </p>
+      <p class="small" data-home-month-empty hidden>この月のカイエはまだありません。</p>
+
+      <div class="homeRecentList">
+        {displayPosts.map((post) => (
+          <article
+            class="homeRecentArticle"
+            data-home-post
+            data-home-post-month={post.month}
+            data-home-post-searchable={post.searchable}
+            hidden={!post.visible}
+          >
+            <h2 class="recentTitle">
+              <a class="recentTitleLink" href={`/posts/${post.slug}`}>
+                {post.title}
+              </a>
+            </h2>
+            <p class="recentDate mono">{post.date}</p>
+
+            <LockGate locked={post.locked} lockHash={post.lockHash} storageKey={post.storageKey}>
+              <div class="prose homeArticleBody" data-home-article-body>
+                <post.Content />
               </div>
-            ) : null}
-            <ul class="postGrid olderMonthsList">
-              {timeline.map(({ item, gapDots, showBead }) => (
-                <li class="cardItem" style={`--dot-count:${gapDots};`}>
-                  {gapDots > 0 ? (
-                    <span class="dotTrail" aria-hidden="true">
-                      {Array.from({ length: gapDots }).map(() => (
-                        <span class="trailDot"></span>
-                      ))}
-                    </span>
-                  ) : null}
-                  {showBead ? (
-                    <span class="timeBead mono">
-                      {formatShortDate(item.date)}
-                    </span>
-                  ) : null}
-                  {item.kind === "post" ? (
-                    <a class="postCard" href={item.href}>
-                      {item.thumbnail ? (
-                        <div class="thumbFrame">
-                          <img class="thumb post-thumb-wide" src={thumbSrc(item.thumbnail)} alt="" loading="lazy" />
-                        </div>
-                      ) : null}
-                    <div class="cardBody">
-                      <strong class="title post-title-2line">{item.title}</strong>
-                      <div class="summaryWrap">
-                        <p class="summary js-summary">{item.summary}</p>
-                      </div>
-                    </div>
-                  </a>
-                  ) : item.kind === "board" ? (
-                    <div class="boardCard">
-                      {item.href ? (
-                        <a class="boardComment" href={item.href}>{item.comment}</a>
-                      ) : (
-                        <p class="boardComment">{item.comment}</p>
-                      )}
-                    </div>
-                  ) : (
-                    <div class="todayMarkerCard" aria-label="今日">
-                      <p class="todayMarkerText">今日はまだ記事がありません。</p>
-                    </div>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </details>
+              {post.homeMore ? (
+                <button class="homeMoreButton" type="button" hidden data-home-more-button>
+                  つづきを表示
+                </button>
+              ) : null}
+            </LockGate>
+          </article>
         ))}
-      </section>
+      </div>
 
-      <section class="homeSection homeArchiveSection" id="homeArchive">
-        <p class="homeArchiveLead small">月ごとの記事一覧です。</p>
-        {monthArchiveEntries.length ? (
+      <hr class="homeDivider" />
+
+      {monthArchiveEntries.length ? (
+        <nav class="monthPicker" aria-label="月の一覧">
           <ul class="monthArchiveList">
             {monthArchiveEntries.map((entry) => (
               <li class="monthArchiveItem">
-                <a class="monthArchiveLink" href={entry.href}>
-                  <span class="monthArchiveLabel">{entry.label}</span>
-                  <span class="monthArchiveCount mono">{entry.count}件</span>
+                <a
+                  class={`monthArchiveLink${entry.month === selectedMonth ? " isCurrent" : ""}`}
+                  href={`?month=${entry.month}`}
+                  aria-current={entry.month === selectedMonth ? "page" : undefined}
+                >
+                  {entry.label} ({entry.count})
                 </a>
               </li>
             ))}
           </ul>
-        ) : (
-          <p class="small">まだ投稿がありません。</p>
-        )}
-        <p class="homeArchiveMore">
-          <a class="homeArchiveMoreLink" href={`${BASE}date/`}>月別の記事一覧をすべて見る</a>
-        </p>
-      </section>
-    </main>
-  </div>
+        </nav>
+      ) : null}
+    </section>
+  </main>
 
   <style>
-    .homeGrid {
+    .homePage {
       width: min(100%, 940px);
       margin-inline: auto;
       display: grid;
-      gap: 16px;
-    }
-
-    .homeCol {
-      display: grid;
-      gap: 16px;
-      align-content: start;
-      min-width: 0;
+      gap: 18px;
     }
 
     .homeSection {
-      padding: 0;
+      display: grid;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .homeSearch {
+      width: min(100%, 320px);
+      justify-self: end;
+      margin-inline: 0;
+    }
+
+    .homeSearchInput {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 0;
+      background: rgba(255, 255, 255, 0.48);
+      color: var(--ink);
+      padding: 8px 10px;
+      font: inherit;
+    }
+
+    .homeSearchInput:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .homeDivider {
+      border: 0;
+      border-top: 1px solid var(--line);
+      margin: 32px 0 56px;
+    }
+
+    .monthPicker {
+      display: grid;
+      gap: 8px;
+      margin-top: 0;
+    }
+
+    .monthArchiveList {
+      list-style: none;
       margin: 0;
+      padding: 0;
+      display: grid;
+      gap: 0.35rem;
+    }
+
+    .monthArchiveLink {
+      color: var(--ink);
+      text-decoration: none;
+    }
+
+    .monthArchiveLink:hover {
+      opacity: 0.84;
+    }
+
+    .monthArchiveLink.isCurrent {
+      color: var(--accent);
     }
 
     .homeRecentList {
@@ -422,7 +262,7 @@ const monthArchiveEntries: MonthArchiveEntry[] = Array.from(monthArchiveMap, ([m
       width: min(100%, 760px);
       margin-inline: auto;
       gap: 28px;
-      margin-bottom: 26px;
+      margin-bottom: 6px;
     }
 
     .homeRecentArticle {
@@ -536,354 +376,23 @@ const monthArchiveEntries: MonthArchiveEntry[] = Array.from(monthArchiveMap, ([m
       border-radius: 10px;
     }
 
-    .postGrid {
-      --timeline-side-space: 34px;
-      list-style: none;
-      padding: 0;
-      padding-right: var(--timeline-side-space);
-      margin: 0;
-      display: grid;
-      gap: 0;
-    }
-
-    .olderMonths {
-      --timeline-side-space: 34px;
-      margin-top: 18px;
-    }
-
-    .olderMonthsButton {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      width: 100%;
-      padding: 4px 0 0 var(--timeline-side-space);
-      cursor: pointer;
-      font-size: 0.82rem;
-      line-height: 1.5;
-      color: #5f564b;
-      opacity: 0.84;
-      list-style: none;
-      user-select: none;
-      box-sizing: border-box;
-    }
-
-    .olderMonthsButton::-webkit-details-marker {
-      display: none;
-    }
-
-    .olderMonthsButton::marker {
-      content: "";
-    }
-
-    .olderMonthsButton::before {
-      content: "+";
-      flex: 0 0 auto;
-      width: 1.2rem;
-      height: 1.2rem;
-      border-radius: 999px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.82rem;
-      line-height: 1;
-      color: #5f564b;
-      background: #eee8de;
-      box-shadow: 0 0 0 1px rgba(98, 86, 67, 0.08);
-    }
-
-    .olderMonths[open] .olderMonthsButton::before {
-      content: "-";
-    }
-
-    .monthBridge {
-      --dot-count: 0;
-      --dot-step: 8px;
-      --gap-space: calc(var(--dot-count) * var(--dot-step));
-      --rail-x: 14px;
-      position: relative;
-      min-width: 0;
-      height: var(--gap-space);
-      padding-left: 34px;
-      padding-right: 34px;
-    }
-
-    .monthBridge .dotTrail {
-      left: var(--rail-x);
-      height: var(--gap-space);
-    }
-
-    .olderMonthsList {
-      margin-top: 0;
-    }
-
-    .cardItem {
-      --dot-count: 0;
-      --dot-step: 8px;
-      --gap-space: calc(var(--dot-count) * var(--dot-step));
-      --rail-x: 14px;
-      position: relative;
-      min-width: 0;
-      padding-top: var(--gap-space);
-      padding-left: 34px;
-    }
-
-    .dotTrail {
-      position: absolute;
-      left: var(--rail-x);
-      top: 0;
-      width: 3px;
-      height: var(--gap-space);
-      display: grid;
-      grid-auto-rows: 2px;
-      align-content: start;
-      justify-items: center;
-      gap: calc(var(--dot-step) - 2px);
-      opacity: 0.72;
-    }
-
-    .trailDot {
-      width: 3px;
-      height: 2px;
-      border-radius: 999px;
-      background: rgba(122, 113, 98, 0.42);
-    }
-
-    .timeBead {
-      position: absolute;
-      left: calc(var(--rail-x) - 14px);
-      top: calc(var(--gap-space) + 4px);
-      z-index: 1;
-      min-width: 40px;
-      height: 24px;
-      padding: 0 7px;
-      border-radius: 999px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.68rem;
-      line-height: 1;
-      color: #5f564b;
-      background: #eee8de;
-      box-shadow: 0 0 0 1px rgba(98, 86, 67, 0.08);
-      white-space: nowrap;
-    }
-
-    .postCard {
-      --thumb-width: 100%;
-      display: grid;
-      grid-template-columns: minmax(0, 1fr);
-      gap: 8px;
-      align-items: start;
-      text-decoration: none;
-      color: var(--ink);
-      padding: 9px 11px 10px;
-      transition: opacity 0.16s ease;
-    }
-
-    .postCard:hover {
-      opacity: 0.82;
-    }
-
-    .thumbFrame {
-      width: 100%;
-      aspect-ratio: 8 / 5;
-      overflow: hidden;
-      align-self: start;
-    }
-
-    .thumb {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-      margin: 0;
-      border: 0;
-    }
-
-    .cardBody {
-      min-width: 0;
-      display: flex;
-      flex-direction: column;
-      padding: 0;
-      height: auto;
-      max-height: none;
-      min-height: 0;
-      overflow: visible;
-    }
-
-    .title {
-      display: block;
-      font-size: 1.08rem;
-      line-height: 1.4;
-      color: var(--ink);
-      font-weight: 400;
-      overflow: visible;
-      display: block;
-      -webkit-line-clamp: unset;
-      -webkit-box-orient: initial;
-    }
-
-    .summary {
-      margin: 0;
-      font-size: 0.88rem;
-      line-height: 1.65;
-      color: var(--muted);
-      opacity: 0.9;
-      display: -webkit-box;
-      -webkit-box-orient: vertical;
-      -webkit-line-clamp: var(--summary-lines, 2);
-      overflow: hidden;
-    }
-
-    .summaryWrap {
-      flex: 1 1 auto;
-      min-height: 0;
-      padding-top: 2px;
-    }
-
-    .boardCard {
-      padding: 9px 11px 10px;
-      display: grid;
-      gap: 4px;
-    }
-
-    .todayMarkerCard {
-      padding: 10px 11px 12px;
-    }
-
-    .todayMarkerText {
-      margin: 0;
-      font-size: 0.84rem;
-      line-height: 1.5;
-      color: var(--muted);
-      opacity: 0.8;
-    }
-
-    .boardComment {
-      margin: 0;
-      font-size: 0.94rem;
-      line-height: 1.6;
-      color: var(--muted);
-      text-decoration: none;
-      opacity: 0.92;
-    }
-
-    a.boardComment:hover {
-      opacity: 0.84;
-    }
-
-    .homeArchiveSection {
-      margin-top: 10px;
-      padding: 16px 0 4px;
-      border-top: 1px dotted var(--line);
-      display: grid;
-      gap: 8px;
-      justify-items: start;
-    }
-
-    .homeArchiveMore {
-      margin: 0;
-    }
-
-    .homeArchiveMoreLink {
-      color: var(--accent);
-      text-decoration: none;
-      font-size: 0.94rem;
-      line-height: 1.6;
-    }
-
-    .homeArchiveMoreLink:hover {
-      opacity: 0.82;
-      text-decoration: underline;
-    }
-
-    .homeArchiveLead {
-      margin: 0;
-      color: var(--muted);
-    }
-
-    .homeArchiveLink {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      color: var(--accent);
-      text-decoration: none;
-      font-size: 0.95rem;
-      line-height: 1.6;
-    }
-
-    .homeArchiveLink:hover {
-      opacity: 0.82;
-      text-decoration: underline;
-    }
-
-    @media (max-width: 900px) {
-      .homeGrid {
-        gap: 18px;
-      }
-    }
-
-    @media (max-width: 760px) {
-      .olderMonths {
-        --timeline-side-space: 28px;
-      }
-
-      .postGrid {
-        --timeline-side-space: 28px;
-      }
-
-      .cardItem {
-        --dot-step: 7px;
-      }
-
-      .monthBridge {
-        --dot-step: 7px;
-        padding-left: 28px;
-        padding-right: 28px;
-      }
-
-    }
-
     @media (max-width: 640px) {
-      .olderMonths {
-        --timeline-side-space: 22px;
+      .homeRecentList {
+        gap: 22px;
       }
 
-      .postGrid {
-        --timeline-side-space: 22px;
-      }
-
-      .cardItem {
-        --dot-step: 6px;
-      }
-
-      .monthBridge {
-        --dot-step: 6px;
-        padding-left: 22px;
-        padding-right: 22px;
-      }
-
-      .postCard {
-        padding: 9px 10px 10px;
-      }
-
-      .summary {
-        -webkit-line-clamp: 3;
-      }
-
+      
     }
   </style>
+
   <script is:inline>
     // @ts-nocheck
-    function fitHomeSummaries() {
-      document.querySelectorAll(".summaryWrap").forEach((wrap) => {
-        const summary = wrap.querySelector(".js-summary");
-        if (!(summary instanceof HTMLElement) || !(wrap instanceof HTMLElement)) return;
-        const wrapHeight = wrap.clientHeight;
-        const lineHeight = Number.parseFloat(getComputedStyle(summary).lineHeight);
-        const lines = Math.max(1, Math.floor(wrapHeight / lineHeight));
-        summary.style.setProperty("--summary-lines", String(lines));
-      });
+    function normalizeSearchText(value) {
+      return value.toLowerCase().replace(/\s+/g, " ").trim();
+    }
+
+    function tokenizeSearchQuery(value) {
+      return normalizeSearchText(value).split(" ").filter(Boolean);
     }
 
     function enhanceHomeArticles() {
@@ -929,8 +438,49 @@ const monthArchiveEntries: MonthArchiveEntry[] = Array.from(monthArchiveMap, ([m
       });
     }
 
-    fitHomeSummaries();
+    function enhanceLiveSearch() {
+      const root = document.querySelector("[data-home-root]");
+      const input = document.querySelector("[data-home-search-input]");
+      const articles = Array.from(document.querySelectorAll("[data-home-post]"));
+      const searchEmpty = document.querySelector("[data-home-search-empty]");
+      const monthEmpty = document.querySelector("[data-home-month-empty]");
+
+      if (
+        !(root instanceof HTMLElement) ||
+        !(input instanceof HTMLInputElement) ||
+        !(searchEmpty instanceof HTMLElement) ||
+        !(monthEmpty instanceof HTMLElement)
+      ) {
+        return;
+      }
+
+      const selectedMonth = root.dataset.selectedMonth ?? "";
+
+      const applyFilter = () => {
+        const terms = tokenizeSearchQuery(input.value);
+        const isSearching = terms.length > 0;
+        let visibleCount = 0;
+
+        for (const article of articles) {
+          if (!(article instanceof HTMLElement)) continue;
+
+          const searchable = normalizeSearchText(article.dataset.homePostSearchable ?? "");
+          const month = article.dataset.homePostMonth ?? "";
+          const visible = isSearching ? terms.every((term) => searchable.includes(term)) : month === selectedMonth;
+
+          article.hidden = !visible;
+          if (visible) visibleCount += 1;
+        }
+
+        searchEmpty.hidden = !isSearching || visibleCount > 0;
+        monthEmpty.hidden = isSearching || visibleCount > 0;
+      };
+
+      input.addEventListener("input", applyFilter);
+      applyFilter();
+    }
+
     enhanceHomeArticles();
-    window.addEventListener("resize", fitHomeSummaries);
+    enhanceLiveSearch();
   </script>
 </BaseLayout>
