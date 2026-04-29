@@ -34,6 +34,7 @@ locked: false
   - 藤高和希『ノット・ライク・ディス』
   - ジュディス・バトラー『ジェンダー・トラブル』
   - ポール・B・プレシアド『テスト・ジャンキー』
+  - [Sandy Stone, "THE "EMPIRE" STRIKES BACK: A POSTTRANSSEXUAL MANIFESTO"(1991)](https://uberty.org/wp-content/uploads/2015/06/trans-manifesto.pdf)
 - なぜこの二人か。
     - この話題（ArcaとANOHNIの楽曲や活動において見られるトランスジェンダリズムの比較）を選んだ理由は三つある。
     - ①欧米のアヴァン・ポップ音楽の近況において、トランス的なアーティストが前景化していることを節々と感じていて、その現象の理由を、表現や作品自体の力強さから掬い取って、探りたい気持ちがあること。
