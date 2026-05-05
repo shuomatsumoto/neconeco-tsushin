@@ -1,5 +1,5 @@
 ---
-title: "ポリフォニックな言語"
+title: "日本語酔い"
 date: "2026-05-05"
 kind: "cahier"
 thumbnail: ""
