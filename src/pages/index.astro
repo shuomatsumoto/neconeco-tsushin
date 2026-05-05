@@ -182,6 +182,8 @@ const displayPosts = await Promise.all(
                   class={`monthArchiveLink${entry.month === selectedMonth ? " isCurrent" : ""}`}
                   href={`?month=${entry.month}`}
                   aria-current={entry.month === selectedMonth ? "page" : undefined}
+                  data-home-month-link
+                  data-home-month={entry.month}
                 >
                   {entry.label} ({entry.count})
                 </a>
@@ -276,7 +278,7 @@ const displayPosts = await Promise.all(
     }
 
     .monthArchiveLink {
-      color: var(--ink);
+      color: #2f7d4f;
       text-decoration: none;
     }
 
@@ -285,7 +287,7 @@ const displayPosts = await Promise.all(
     }
 
     .monthArchiveLink.isCurrent {
-      color: var(--accent);
+      color: #2f7d4f;
     }
 
     .homeRecentList {
@@ -477,6 +479,7 @@ const displayPosts = await Promise.all(
       const root = document.querySelector("[data-home-root]");
       const input = document.querySelector("[data-home-search-input]");
       const articles = Array.from(document.querySelectorAll("[data-home-post]"));
+      const monthLinks = Array.from(document.querySelectorAll("[data-home-month-link]"));
       const searchEmpty = document.querySelector("[data-home-search-empty]");
       const monthEmpty = document.querySelector("[data-home-month-empty]");
 
@@ -489,7 +492,34 @@ const displayPosts = await Promise.all(
         return;
       }
 
-      const selectedMonth = root.dataset.selectedMonth ?? "";
+      const defaultMonth = root.dataset.selectedMonth ?? "";
+      const availableMonths = new Set(
+        monthLinks
+          .filter((link) => link instanceof HTMLElement)
+          .map((link) => link.dataset.homeMonth ?? "")
+          .filter(Boolean)
+      );
+      const params = new URLSearchParams(window.location.search);
+      const urlMonth = params.get("month") ?? "";
+      const selectedMonth = availableMonths.has(urlMonth) ? urlMonth : defaultMonth;
+      const urlSearch = params.get("search");
+
+      if (urlSearch !== null) {
+        input.value = urlSearch;
+      }
+
+      for (const link of monthLinks) {
+        if (!(link instanceof HTMLAnchorElement)) continue;
+
+        const isCurrent = link.dataset.homeMonth === selectedMonth;
+        link.classList.toggle("isCurrent", isCurrent);
+
+        if (isCurrent) {
+          link.setAttribute("aria-current", "page");
+        } else {
+          link.removeAttribute("aria-current");
+        }
+      }
 
       const applyFilter = () => {
         const terms = tokenizeSearchQuery(input.value);
